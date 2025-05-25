@@ -23,9 +23,10 @@ jobs:
           node-version: 22.14.0
       - name: Build webpage
         run: |
+          cd home-page
           npm ci
           npm run build
-        working-directory: ./home-page
+        #¸working-directory: ./home-page
 
       - name: Verify that infra synthesizes
         run: |
