@@ -28,7 +28,7 @@ jobs:
           npx cdk synth
       - name: Build webpage
         run: |
-          npm ci
+          npm install
           npm run build
         working-directory: ./home-page
       - name: create zip of cdk source code
