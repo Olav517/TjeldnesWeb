@@ -34,7 +34,7 @@ export class WebsiteResourcesStack extends cdk.Stack {
     })
     const deployment = new s3Deploy.BucketDeployment(this, "WebsiteDeployment", {
             destinationBucket: WebsiteBucket,
-            sources: [s3Deploy.Source.asset(".//home-page/dist")],
+            sources: [s3Deploy.Source.asset(".//homePage/dist")],
             cacheControl: [s3Deploy.CacheControl.noCache()],
         })
 
