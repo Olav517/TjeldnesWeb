@@ -9,7 +9,7 @@ import * as dynamoDb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
-
+import * as agw from 'aws-cdk-lib/aws-apigateway';
 
 export interface Props extends cdk.StackProps {
     /**
@@ -20,6 +20,7 @@ export interface Props extends cdk.StackProps {
     hostedZone: r53.HostedZone;
     projectPrefix: string;
     domainName: string;
+    apiDomainName: string;
     certificate: acm.ICertificate;
 }
 
@@ -101,8 +102,25 @@ export class WebsiteResourcesStack extends cdk.Stack {
             environment: {
                 TABLE_NAME: database.tableName
             }
+            
         })
+        
+        const api = new agw.LambdaRestApi(this, "VisitorCounterAPI", {
+            handler: handler,
+            domainName: {
+              domainName:props.apiDomainName,
+              certificate: props.certificate,
+            },
+            description: "API for incrementing visitor counter",
+        });
+
+        const apiRecord = new r53.ARecord(this, "api-cloudfront-record",{
+            target: r53.RecordTarget.fromAlias(new r53Targets.ApiGateway(api)),
+            zone: props.hostedZone,
+            comment: "Points r53 subdomain to the proper API Gateway target"
+        });
         database.grantReadWriteData(handler);
+
 
 }
 }

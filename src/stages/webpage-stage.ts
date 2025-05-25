@@ -30,6 +30,7 @@ export class WebpageStage extends cdk.Stage {
       hostedZone: dnsStack.hostedZone,
       projectPrefix: props.projectPrefix,
       domainName: props.domainName,
+      apiDomainName: `api.${props.domainName}`,
       certificate: certStack.certificate,
       crossRegionReferences: true,
     })
