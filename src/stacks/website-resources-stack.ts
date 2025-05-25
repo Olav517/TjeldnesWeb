@@ -39,12 +39,27 @@ export class WebsiteResourcesStack extends cdk.Stack {
         })
 
     const oai = new cloudfront.OriginAccessIdentity(this, 'newOAI');
+    
     const distribution = new cloudfront.Distribution(this, "WebsiteDistribution", {
       defaultBehavior: {
         origin: new origins.S3Origin(WebsiteBucket, {
           originAccessIdentity: oai,
         }),
+        
       },
+      defaultRootObject: "index.html",
+      errorResponses: [
+        {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+        },
+        {
+          httpStatus: 404,
+          responseHttpStatus: 200,
+          responsePagePath: "/index.html",
+        },
+      ],
     })
 
     WebsiteBucket.grantRead(oai);
