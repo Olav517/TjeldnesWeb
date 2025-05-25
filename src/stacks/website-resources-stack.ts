@@ -86,6 +86,7 @@ export class WebsiteResourcesStack extends cdk.Stack {
     const record = new r53.ARecord(this, "domain-cloudfront-record",{
             target: r53.RecordTarget.fromAlias(new r53Targets.CloudFrontTarget(distribution)),
             zone: props.hostedZone,
+            recordName: props.domainName,
             comment: "Points r53 subdomain to the proper cloudfront target"
         })
 
