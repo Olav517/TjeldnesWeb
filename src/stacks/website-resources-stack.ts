@@ -20,6 +20,7 @@ export interface Props extends cdk.StackProps {
     hostedZone: r53.HostedZone;
     projectPrefix: string;
     domainName: string;
+    certificate: acm.ICertificate;
 }
 
 export class WebsiteResourcesStack extends cdk.Stack {
@@ -38,12 +39,6 @@ export class WebsiteResourcesStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY, // Only for dev/test environments
       autoDeleteObjects: true, 
     })
-    
-    const certificate = new acm.Certificate(this, 'WebsiteCertificate', {
-      domainName: props.domainName,
-      validation: acm.CertificateValidation.fromDns(props.hostedZone),
-      subjectAlternativeNames: [`*.${props.domainName}`],
-    });
 
     const oai = new cloudfront.OriginAccessIdentity(this, 'newOAI');
 
@@ -57,7 +52,7 @@ export class WebsiteResourcesStack extends cdk.Stack {
         
       },
       domainNames: [props.domainName],
-      certificate: certificate,
+      certificate: props.certificate,
       defaultRootObject: "index.html",
       errorResponses: [
         {

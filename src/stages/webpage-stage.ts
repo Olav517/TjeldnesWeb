@@ -1,6 +1,7 @@
 import * as constructs from "constructs"
 import * as cdk from "aws-cdk-lib"
 import { DnsStack } from "../stacks/dns-stack" 
+import { CertStack } from "../stacks/certificate-stack"
 import { WebsiteResourcesStack } from "../stacks/website-resources-stack"
 
 interface Props extends cdk.StageProps {
@@ -18,11 +19,19 @@ export class WebpageStage extends cdk.Stage {
       projectPrefix: props.projectPrefix,
     })
 
+    const certStack = new CertStack(this, "certificate-stack", {
+      domainName: props.domainName,
+      hostedZoneId: dnsStack.hostedZone.hostedZoneId,
+      crossRegionReferences: true,
+    })
+
     new WebsiteResourcesStack(this, "website-resources", {
       description: "Contains the resources needed for a static website",
       hostedZone: dnsStack.hostedZone,
       projectPrefix: props.projectPrefix,
       domainName: props.domainName,
+      certificate: certStack.certificate,
+      crossRegionReferences: true,
     })
   }
 }
