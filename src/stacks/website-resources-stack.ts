@@ -7,6 +7,8 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as dynamoDb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
+
 
 export interface Props extends cdk.StackProps {
     /**
@@ -30,6 +32,11 @@ export class WebsiteResourcesStack extends cdk.Stack {
     const WebsiteBucket = new s3.Bucket(this, "WebsiteBucket", {
       publicReadAccess: false,
     })
+    const deployment = new s3Deploy.BucketDeployment(this, "WebsiteDeployment", {
+            destinationBucket: WebsiteBucket,
+            sources: [s3Deploy.Source.asset(".//home-page/dist")],
+            cacheControl: [s3Deploy.CacheControl.noCache()],
+        })
 
     const distribution = new cloudfront.Distribution(this, "WebsiteDistribution", {
       defaultBehavior: {
