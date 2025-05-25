@@ -5,8 +5,8 @@ on:
 
 env:
   AWS_ACCOUNT_ID: "635675040131"
-  AWS_ARTIFACT_BUCKET_NAME: "cloud-resume-challenge-build-artifact-635675040131-eu-central-1"
-  AWS_DEPLOYMENT_PIPELINE_NAME: "cloud-resume-challenge-pipeline"
+  AWS_ARTIFACT_BUCKET_NAME: "tjeldnes-web-build-artifact-635675040131-eu-central-1"
+  AWS_DEPLOYMENT_PIPELINE_NAME: "tjeldnes-web-pipeline"
   AWS_IAM_ROLE_NAME: "github-actions-role"
   AWS_REGION: "eu-central-1"
 
