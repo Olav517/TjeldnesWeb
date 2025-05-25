@@ -8,6 +8,7 @@ import * as constructs from "constructs"
 
 import { primaryRegion, privateAccountId, projectPrefix } from "../config"
 import { BuildArtifactStage } from "../stages/build-artifact-stage"
+import { WebpageStage } from "../stages/webpage-stage"
 
 export class PipelineStack extends cdk.Stack {
   constructor(scope: constructs.Construct, id: string, props: cdk.StackProps) {
@@ -37,7 +38,7 @@ export class PipelineStack extends cdk.Stack {
       })
 
     })
-  
+    
     pipeline.addStage(
         new BuildArtifactStage(this, `${projectPrefix}-dev-build`, {
             env:{
@@ -52,6 +53,17 @@ export class PipelineStack extends cdk.Stack {
               }
             ]
         })
+    )
+
+    pipeline.addStage(
+      new WebpageStage(this, `${projectPrefix}-dev-webpage`, {
+        env: {
+          region: primaryRegion,
+          account: privateAccountId
+        },
+        domainName: domainName,
+        projectPrefix: projectPrefix,
+      })
     )
 
     pipeline.buildPipeline()
