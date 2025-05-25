@@ -10,6 +10,7 @@ export interface Props extends cdk.StackProps {
      *  @default 'test.tjeldnes.com'
      */
     domainName: string
+    projectPrefix: string;
 }
 
 export class DnsStack extends cdk.Stack {
@@ -22,7 +23,7 @@ export class DnsStack extends cdk.Stack {
         
         const hostedZone = new r53.HostedZone(this, "HZ test.tjeldnes.com", {
             zoneName: props.domainName,
-            comment: "Test hostedzone that is owned by CDK"
+            comment: `Test hostedzone instantiated by ${props.projectPrefix} stack`
         })
         this.hostedZoneId = hostedZone.hostedZoneId;
         this.hostedZone = hostedZone

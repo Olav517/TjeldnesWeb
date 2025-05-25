@@ -14,7 +14,8 @@ export class WebpageStage extends cdk.Stage {
 
     const dnsStack = new DnsStack(this, "build-artifact", {
       description: "Contains the resources needed for a CI/CD build pipeline thats automatically populated by a github repo",
-      domainName: props.domainName
+      domainName: props.domainName,
+      projectPrefix: props.projectPrefix,
     })
 
     new WebsiteResourcesStack(this, "website-resources", {
