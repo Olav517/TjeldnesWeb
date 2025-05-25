@@ -47,11 +47,7 @@ export class PipelineStack extends cdk.Stack {
             bucketName: artifactBucketName,
             trustedRepositories: [
               {
-                name: "CloudResumeChallengeBackend",
-                owner: "Olav517"
-              },
-              {
-                name: "CloudResumeChallengeFrontend",
+                name: "TjeldnesWeb",
                 owner: "Olav517"
               }
             ]

@@ -62,6 +62,7 @@ export class BuildArtifactStack extends cdk.Stack {
       (repository) =>
         `repo:${repository.owner}/${repository.name}:ref:refs/heads/${repository.defaultBranch ?? "main"}`,
     )
+    
     const principal = new iam.FederatedPrincipal(
       oidcProvider.openIdConnectProviderArn,
       {
