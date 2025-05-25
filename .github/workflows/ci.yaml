@@ -32,7 +32,7 @@ jobs:
 #          npm run build
 #        working-directory: ./home-page
       - name: create zip of cdk source code
-        run: zip -r "cdk-source.zip" cdk.json src package-lock.json package.json tsconfig.json cdk.context.json home-page/dist
+        run: zip -r "cdk-source.zip" cdk.json src package-lock.json package.json tsconfig.json cdk.context.json home-page/dist APIs
 
       - name: get temporary aws credentials
         if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
