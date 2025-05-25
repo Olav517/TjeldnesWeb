@@ -1,0 +1,16 @@
+.pdf-container {
+  padding: 20px;
+  background-color: #242424;
+  border-radius: 8px;
+  width: calc(100% - 40px); /* Container width minus padding */
+  height: calc(100vh - 40px);
+  display: flex;
+  justify-content: center;
+}
+
+.pdf-container embed {
+  width: 100%;
+  max-width: 800px; /* Reduced from 1200px for better readability */
+  height: 100%;
+  border: none;
+}
