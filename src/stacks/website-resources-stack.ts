@@ -102,14 +102,18 @@ export class WebsiteResourcesStack extends cdk.Stack {
             environment: {
                 TABLE_NAME: database.tableName
             }
-            
         })
         
+        const apiCert = new acm.Certificate(this, "APICertificate", {
+            domainName: props.apiDomainName,
+            validation: acm.CertificateValidation.fromDns(props.hostedZone),
+        });
+
         const api = new agw.LambdaRestApi(this, "VisitorCounterAPI", {
             handler: handler,
             domainName: {
               domainName:props.apiDomainName,
-              certificate: props.certificate,
+              certificate: apiCert,
             },
             description: "API for incrementing visitor counter",
         });
