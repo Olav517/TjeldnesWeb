@@ -31,20 +31,20 @@ export class WebsiteResourcesStack extends cdk.Stack {
         
     const WebsiteBucket = new s3.Bucket(this, "WebsiteBucket", {
       publicReadAccess: false,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // Only for dev/test environments
+      autoDeleteObjects: true, 
     })
-    const deployment = new s3Deploy.BucketDeployment(this, "WebsiteDeployment", {
-            destinationBucket: WebsiteBucket,
-            sources: [s3Deploy.Source.asset(".//homePage/dist")],
-            cacheControl: [s3Deploy.CacheControl.noCache()],
-        })
-
-    const oai = new cloudfront.OriginAccessIdentity(this, 'newOAI');
     
     const distribution = new cloudfront.Distribution(this, "WebsiteDistribution", {
       defaultBehavior: {
         origin: new origins.S3Origin(WebsiteBucket, {
           originAccessIdentity: oai,
         }),
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         
       },
       defaultRootObject: "index.html",
@@ -61,6 +61,19 @@ export class WebsiteResourcesStack extends cdk.Stack {
         },
       ],
     })
+    
+    const deployment = new s3Deploy.BucketDeployment(this, "WebsiteDeployment", {
+      destinationBucket: WebsiteBucket,
+      sources: [s3Deploy.Source.asset("./homePage/dist")],
+      cacheControl: [
+        s3Deploy.CacheControl.setPublic(),
+        s3Deploy.CacheControl.maxAge(cdk.Duration.days(365)),
+        s3Deploy.CacheControl.sMaxAge(cdk.Duration.days(365)),
+      ],
+      distribution,
+      distributionPaths: ["/*"],
+    })
+    const oai = new cloudfront.OriginAccessIdentity(this, 'newOAI');
 
     WebsiteBucket.grantRead(oai);
 
