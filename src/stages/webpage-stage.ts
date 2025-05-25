@@ -22,6 +22,7 @@ export class WebpageStage extends cdk.Stage {
       description: "Contains the resources needed for a static website",
       hostedZone: dnsStack.hostedZone,
       projectPrefix: props.projectPrefix,
+      domainName: props.domainName,
     })
   }
 }

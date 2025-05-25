@@ -8,6 +8,7 @@ import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as dynamoDb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 
 
 export interface Props extends cdk.StackProps {
@@ -18,7 +19,7 @@ export interface Props extends cdk.StackProps {
      */
     hostedZone: r53.HostedZone;
     projectPrefix: string;
-    domainName?: string;
+    domainName: string;
 }
 
 export class WebsiteResourcesStack extends cdk.Stack {
@@ -38,6 +39,12 @@ export class WebsiteResourcesStack extends cdk.Stack {
       autoDeleteObjects: true, 
     })
     
+    const certificate = new acm.Certificate(this, 'WebsiteCertificate', {
+      domainName: props.domainName,
+      validation: acm.CertificateValidation.fromDns(props.hostedZone),
+      subjectAlternativeNames: [`*.${props.domainName}`],
+    });
+
     const oai = new cloudfront.OriginAccessIdentity(this, 'newOAI');
 
     const distribution = new cloudfront.Distribution(this, "WebsiteDistribution", {
@@ -49,6 +56,8 @@ export class WebsiteResourcesStack extends cdk.Stack {
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         
       },
+      domainNames: [props.domainName],
+      certificate: certificate,
       defaultRootObject: "index.html",
       errorResponses: [
         {
