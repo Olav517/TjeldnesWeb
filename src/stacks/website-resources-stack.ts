@@ -38,6 +38,8 @@ export class WebsiteResourcesStack extends cdk.Stack {
       autoDeleteObjects: true, 
     })
     
+    const oai = new cloudfront.OriginAccessIdentity(this, 'newOAI');
+
     const distribution = new cloudfront.Distribution(this, "WebsiteDistribution", {
       defaultBehavior: {
         origin: new origins.S3Origin(WebsiteBucket, {
@@ -61,7 +63,7 @@ export class WebsiteResourcesStack extends cdk.Stack {
         },
       ],
     })
-    
+
     const deployment = new s3Deploy.BucketDeployment(this, "WebsiteDeployment", {
       destinationBucket: WebsiteBucket,
       sources: [s3Deploy.Source.asset("./homePage/dist")],
@@ -73,7 +75,6 @@ export class WebsiteResourcesStack extends cdk.Stack {
       distribution,
       distributionPaths: ["/*"],
     })
-    const oai = new cloudfront.OriginAccessIdentity(this, 'newOAI');
 
     WebsiteBucket.grantRead(oai);
 
