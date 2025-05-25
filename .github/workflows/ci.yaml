@@ -1,0 +1,43 @@
+on:
+  push:
+    branches:
+    - "**"
+
+env:
+  AWS_ACCOUNT_ID: "635675040131"
+  AWS_ARTIFACT_BUCKET_NAME: "cloud-resume-challenge-build-artifact-635675040131-eu-central-1"
+  AWS_DEPLOYMENT_PIPELINE_NAME: "cloud-resume-challenge-pipeline"
+  AWS_IAM_ROLE_NAME: "github-actions-role"
+  AWS_REGION: "eu-central-1"
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4.1.4
+      - uses: actions/setup-node@v4.0.2
+        with:
+          node-version: 20
+
+      - name: Verify that infra synthesizes
+        run: |
+          npm ci
+          npx cdk synth
+
+      - name: create zip of cdk source code
+        run: zip -r "cdk-source.zip" cdk.json src package-lock.json package.json tsconfig.json cdk.context.json
+
+      - name: get temporary aws credentials
+        if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: "arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.AWS_IAM_ROLE_NAME }}"
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: trigger deployment pipeline
+        if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+        run: |
+          aws s3 cp cdk-source.zip "s3://$AWS_ARTIFACT_BUCKET_NAME/$AWS_DEPLOYMENT_PIPELINE_NAME/cdk-source.zip"
