@@ -25,7 +25,7 @@ jobs:
         run: |
           npm ci
           npm run build
-        working-directory: ./reactApp
+        working-directory: ./home-page
 
       - name: Verify that infra synthesizes
         run: |
