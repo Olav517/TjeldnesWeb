@@ -26,11 +26,11 @@ jobs:
         run: |
           npm ci
           npx cdk synth
-      - name: Build webpage
-        run: |
-          npm ci
-          npm run build
-        working-directory: ./home-page
+#      - name: Build webpage
+#        run: |
+#          npm ci
+#          npm run build
+#        working-directory: ./home-page
       - name: create zip of cdk source code
         run: zip -r "cdk-source.zip" cdk.json src package-lock.json package.json tsconfig.json cdk.context.json home-page/dist
 
