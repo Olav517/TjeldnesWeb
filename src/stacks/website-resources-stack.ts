@@ -121,8 +121,10 @@ export class WebsiteResourcesStack extends cdk.Stack {
         const apiRecord = new r53.ARecord(this, "api-cloudfront-record",{
             target: r53.RecordTarget.fromAlias(new r53Targets.ApiGateway(api)),
             zone: props.hostedZone,
+            recordName: props.apiDomainName,
             comment: "Points r53 subdomain to the proper API Gateway target"
         });
+
         database.grantReadWriteData(handler);
 
 
