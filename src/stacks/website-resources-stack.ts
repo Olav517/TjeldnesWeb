@@ -38,11 +38,16 @@ export class WebsiteResourcesStack extends cdk.Stack {
             cacheControl: [s3Deploy.CacheControl.noCache()],
         })
 
+    const oai = new cloudfront.OriginAccessIdentity(this, 'newOAI');
     const distribution = new cloudfront.Distribution(this, "WebsiteDistribution", {
       defaultBehavior: {
-        origin: new origins.S3StaticWebsiteOrigin(WebsiteBucket),
+        origin: new origins.S3Origin(WebsiteBucket, {
+          originAccessIdentity: oai,
+        }),
       },
     })
+
+    WebsiteBucket.grantRead(oai);
 
     const record = new r53.ARecord(this, "domain-cloudfront-record",{
             target: r53.RecordTarget.fromAlias(new r53Targets.CloudFrontTarget(distribution)),
