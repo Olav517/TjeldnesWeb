@@ -1,8 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Home from './pages/Home'
-import About from './pages/About'
-import Sidebar from './components/Sidebar'
-import Resume from './pages/Resume'
+import Home from './pages/home'
+import About from './pages/about'
+import Sidebar from './components/sidebar'
+import Resume from './pages/resume'
 import './App.css'
 
 function App() {
