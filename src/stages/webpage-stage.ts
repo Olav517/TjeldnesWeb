@@ -3,6 +3,7 @@ import * as cdk from "aws-cdk-lib"
 import { DnsStack } from "../stacks/dns-stack" 
 import { CertStack } from "../stacks/certificate-stack"
 import { WebsiteResourcesStack } from "../stacks/website-resources-stack"
+import { DynamicWebpageStack } from "../stacks/dynamic-webpage-stack"
 
 interface Props extends cdk.StageProps {
   domainName: string
@@ -31,6 +32,15 @@ export class WebpageStage extends cdk.Stage {
       projectPrefix: props.projectPrefix,
       domainName: props.domainName,
       apiDomainName: `api.${props.domainName}`,
+      certificate: certStack.certificate,
+      crossRegionReferences: true,
+    })
+
+    new DynamicWebpageStack(this, "dynamic-webpage", {
+      description: "Contains the resources needed for a dynamic webpage",
+      domainName: `dynamic.${props.domainName}`,
+      projectPrefix: props.projectPrefix,
+      hostedZone: dnsStack.hostedZone,
       certificate: certStack.certificate,
       crossRegionReferences: true,
     })
