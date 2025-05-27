@@ -6,6 +6,7 @@ import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
+import { Service } from 'aws-cdk-lib/aws-servicediscovery';
 
 
 export interface Props extends cdk.StackProps {
@@ -37,17 +38,23 @@ export class DynamicWebpageStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-
+    //i think the cert needs to be in the same region as the ALB so i gotta put a new cert in eu-west-1, either that or a route53 record. Not really sure though.
+    // Create ACM Certificate
+    const dynamicCertificate = new acm.Certificate(this, 'WebCertificate', {
+      domainName: props.domainName,
+      validation: acm.CertificateValidation.fromDns(props.hostedZone),
+      subjectAlternativeNames: [`*.${props.domainName}`],
+    });
 
     // Create Fargate Service with ALB
     const service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'WebService', {
       cluster: cluster,
-      certificate: props.certificate,
+      certificate: dynamicCertificate,
       domainName: props.domainName,
       domainZone: props.hostedZone,
       taskImageOptions: {
-        image: ecs.ContainerImage.fromEcrRepository(repository),
-        containerPort: 3000, // adjust based on your app
+        image: ecs.ContainerImage.fromRegistry('nginx:latest'),
+        containerPort: 80, // adjust based on your app
         environment: {
           NODE_ENV: 'production',
         },
@@ -55,6 +62,7 @@ export class DynamicWebpageStack extends cdk.Stack {
       memoryLimitMiB: 512,
       cpu: 256,
     });
+    
 
     // Add autoscaling
     const scaling = service.service.autoScaleTaskCount({
@@ -65,5 +73,12 @@ export class DynamicWebpageStack extends cdk.Stack {
     scaling.scaleOnCpuUtilization('CpuScaling', {
       targetUtilizationPercent: 70,
     });
+
+    const dynamicRecord = new r53.ARecord(this, 'DynamicWebRecord', {
+      zone: props.hostedZone,
+      recordName: `${props.domainName}`,
+      target: r53.RecordTarget.fromAlias(new route53Targets.LoadBalancerTarget(service.loadBalancer)),
+    });
+
   }
 }
