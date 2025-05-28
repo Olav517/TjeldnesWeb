@@ -38,18 +38,11 @@ export class DynamicWebpageStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    //i think the cert needs to be in the same region as the ALB so i gotta put a new cert in eu-west-1, either that or a route53 record. Not really sure though.
-    // Create ACM Certificate
-    const dynamicCertificate = new acm.Certificate(this, 'WebCertificate', {
-      domainName: props.domainName,
-      validation: acm.CertificateValidation.fromDns(props.hostedZone),
-      subjectAlternativeNames: [`*.${props.domainName}`],
-    });
-
     // Create Fargate Service with ALB
     const service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'WebService', {
       cluster: cluster,
-      certificate: dynamicCertificate,
+      certificate: props.certificate,
+      loadBalancerName: `${props.projectPrefix}-dynamic-webpage-alb`,
       domainName: props.domainName,
       domainZone: props.hostedZone,
       taskImageOptions: {
