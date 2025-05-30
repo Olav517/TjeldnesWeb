@@ -38,19 +38,10 @@ export class DynamicWebpageStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    // Create Certificate
-    const albCertificate = new acm.Certificate(this, 'AlbCertificate', {
-      domainName: props.domainName,
-      validation: acm.CertificateValidation.fromDns(props.hostedZone),
-    });
-
     // Create Fargate Service with ALB
     const service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'WebService', {
       cluster: cluster,
-      certificate: albCertificate,
       loadBalancerName: `${props.projectPrefix}-dynamic-webpage-alb`,
-      domainName: props.domainName,
-      domainZone: props.hostedZone,
       taskImageOptions: {
         image: ecs.ContainerImage.fromRegistry('nginx:latest'),
         containerPort: 80, // adjust based on your app
@@ -71,12 +62,6 @@ export class DynamicWebpageStack extends cdk.Stack {
 
     scaling.scaleOnCpuUtilization('CpuScaling', {
       targetUtilizationPercent: 70,
-    });
-
-    const dynamicRecord = new r53.ARecord(this, 'DynamicWebRecord', {
-      zone: props.hostedZone,
-      recordName: `${props.domainName}`,
-      target: r53.RecordTarget.fromAlias(new route53Targets.LoadBalancerTarget(service.loadBalancer)),
     });
 
   }
