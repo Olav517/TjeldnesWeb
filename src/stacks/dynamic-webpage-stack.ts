@@ -38,10 +38,16 @@ export class DynamicWebpageStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    // Create Certificate
+    const albCertificate = new acm.Certificate(this, 'AlbCertificate', {
+      domainName: props.domainName,
+      validation: acm.CertificateValidation.fromDns(props.hostedZone),
+    });
+
     // Create Fargate Service with ALB
     const service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'WebService', {
       cluster: cluster,
-      certificate: props.certificate,
+      certificate: albCertificate,
       loadBalancerName: `${props.projectPrefix}-dynamic-webpage-alb`,
       domainName: props.domainName,
       domainZone: props.hostedZone,
