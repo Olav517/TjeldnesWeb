@@ -33,7 +33,7 @@ export class AlbCertificateStack extends cdk.Stack {
         const hostedZone = r53.HostedZone.fromHostedZoneId(this, "certHostedZone", props.hostedZoneId)
 
         const certificate = new acm.Certificate(this, 'albCert', {
-            domainName: `*.dynamic.${props.domainName}`,
+            domainName: props.domainName,
             validation: acm.CertificateValidation.fromDns(hostedZone),
         });
 

@@ -16,13 +16,14 @@ export interface Props extends cdk.StackProps{
      * 
      */
     hostedZoneId: string
+    region: string
 }
 
 export class CertStack extends cdk.Stack {
     public readonly certificate: acm.Certificate
     constructor(scope: constructs.Construct, id: string, props: Props){
         
-        super(scope, id, {...props, env: {region: secondaryRegion}})
+        super(scope, id, {...props, env: {region: props.region}})
 
         const hostedZone = r53.HostedZone.fromHostedZoneId(this, "certHostedZone", props.hostedZoneId)
 

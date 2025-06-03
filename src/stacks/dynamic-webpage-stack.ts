@@ -47,7 +47,7 @@ export class DynamicWebpageStack extends cdk.Stack {
       natGateways: 1,
     });
 
-    // Create Security Groups
+
     const albSecurityGroup = new ec2.SecurityGroup(this, 'AlbSecurityGroup', {
       vpc,
       description: 'Security group for ALB',
@@ -65,6 +65,7 @@ export class DynamicWebpageStack extends cdk.Stack {
       ec2.Port.tcp(80),
       'Allow HTTP traffic'
     );
+
     
     const fargateSecurityGroup = new ec2.SecurityGroup(this, 'FargateServiceSecurityGroup', {
       vpc,

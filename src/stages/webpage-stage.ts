@@ -4,6 +4,7 @@ import { DnsStack } from "../stacks/dns-stack"
 import { CertStack } from "../stacks/certificate-stack"
 import { WebsiteResourcesStack } from "../stacks/website-resources-stack"
 import { DynamicWebpageStack } from "../stacks/dynamic-webpage-stack"
+import { primaryRegion, secondaryRegion } from "../config"
 
 interface Props extends cdk.StageProps {
   domainName: string
@@ -24,6 +25,13 @@ export class WebpageStage extends cdk.Stage {
       domainName: props.domainName,
       hostedZoneId: dnsStack.hostedZone.hostedZoneId,
       crossRegionReferences: true,
+      region: secondaryRegion, // Deploy to us-east-1
+    })
+    
+    const albCertStack = new CertStack(this, "alb-certificate-stack", {
+      domainName: `dynamic.${props.domainName}`,
+      hostedZoneId: dnsStack.hostedZone.hostedZoneId,
+      region: primaryRegion, // Deploy to eu-central-1
     })
 
     new WebsiteResourcesStack(this, "website-resources", {
@@ -41,7 +49,7 @@ export class WebpageStage extends cdk.Stage {
       domainName: `dynamic.${props.domainName}`,
       projectPrefix: props.projectPrefix,
       hostedZone: dnsStack.hostedZone,
-      certificate: certStack.certificate,
+      certificate: albCertStack.certificate,
       crossRegionReferences: true,
     })
   }
