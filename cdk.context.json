@@ -7,5 +7,12 @@
     "eu-central-1a",
     "eu-central-1b",
     "eu-central-1c"
-  ]
+  ],
+  "vpc-provider:account=635675040131:filter.isDefault=true:region=eu-central-1:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-0abf6192c6279ac19",
+    "vpcCidrBlock": "172.31.0.0/16",
+    "ownerAccountId": "635675040131",
+    "availabilityZones": [],
+    "subnetGroups": []
+  }
 }
