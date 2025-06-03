@@ -26,8 +26,9 @@ export interface Props extends cdk.StackProps {
 
 export class DynamicWebpageStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: Props) {
+    // Make sure we deploy to the same region as the certificate (eu-central-1)
+    
     super(scope, id, props);
-
     
     const cluster = new ecs.Cluster(this, 'WebCluster', {
       clusterName: `${props.projectPrefix}-cluster`,
