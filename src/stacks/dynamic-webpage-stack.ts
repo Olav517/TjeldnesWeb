@@ -86,7 +86,7 @@ export class DynamicWebpageStack extends cdk.Stack {
       loadBalancerName: `${props.projectPrefix}-dynamic-webpage-alb`,
       securityGroup: albSecurityGroup,
     });
-    
+    /*
     // Create HTTPS Listener with certificate
     const httpsListener = alb.addListener('HttpsListener', {
       port: 443,
@@ -108,7 +108,7 @@ export class DynamicWebpageStack extends cdk.Stack {
         protocol: 'HTTPS',
         permanent: true,
       }),
-    });
+    });*/
     
     // Update ECS Cluster to use the VPC
     cluster.enableFargateCapacityProviders();
@@ -157,12 +157,12 @@ export class DynamicWebpageStack extends cdk.Stack {
         unhealthyThresholdCount: 2,
       },
     });
-    
+    /*
     // Add target group to the HTTPS listener
     httpsListener.addTargetGroups('TargetGroups', {
       targetGroups: [targetGroup],
     });
-    
+    */
     // Register service with target group
     targetGroup.addTarget(fargateService);
     
