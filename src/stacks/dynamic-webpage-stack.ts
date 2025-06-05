@@ -15,7 +15,7 @@ export interface Props extends cdk.StackProps {
     /**
      * The url we want cloudformation to make point towards our website
      * 
-     *  @default 'test.tjeldnes.com'
+     *  @default dynamic.test.tjeldnes.com'
      */
     domainName: string
     projectPrefix: string;
@@ -111,7 +111,7 @@ export class DynamicWebpageStack extends cdk.Stack {
     });*/
     
     // Update ECS Cluster to use the VPC
-    cluster.enableFargateCapacityProviders();
+    //cluster.enableFargateCapacityProviders();
     
     // Create Task Definition
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'WebTaskDef', {
