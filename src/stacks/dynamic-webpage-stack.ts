@@ -26,11 +26,17 @@ export interface Props extends cdk.StackProps {
 
 export class DynamicWebpageStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: Props) {
-    // Make sure we deploy to the same region as the certificate (eu-central-1)
-    
     super(scope, id, props);
-    
+
+    // 1. Create the VPC first
+    const vpc = new ec2.Vpc(this, 'WebVpc', {
+      maxAzs: 2,
+      natGateways: 1,
+    });
+
+    // 2. Pass the VPC to the ECS cluster
     const cluster = new ecs.Cluster(this, 'WebCluster', {
+      vpc,
       clusterName: `${props.projectPrefix}-cluster`,
       containerInsights: true,
     });
@@ -42,11 +48,6 @@ export class DynamicWebpageStack extends cdk.Stack {
     });
 
     
-    const vpc = new ec2.Vpc(this, 'WebVpc', {
-      maxAzs: 2,
-      natGateways: 1,
-    });
-
 
     const albSecurityGroup = new ec2.SecurityGroup(this, 'AlbSecurityGroup', {
       vpc,
