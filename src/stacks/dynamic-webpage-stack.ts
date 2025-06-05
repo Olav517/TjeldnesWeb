@@ -41,78 +41,6 @@ export class DynamicWebpageStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    
-    const vpc = new ec2.Vpc(this, 'WebVpc', {
-      maxAzs: 2,
-      natGateways: 1,
-    });
-
-
-    const albSecurityGroup = new ec2.SecurityGroup(this, 'AlbSecurityGroup', {
-      vpc,
-      description: 'Security group for ALB',
-      allowAllOutbound: true,
-    });
-    
-    albSecurityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(443),
-      'Allow HTTPS traffic'
-    );
-    
-    albSecurityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(80),
-      'Allow HTTP traffic'
-    );
-
-    
-    const fargateSecurityGroup = new ec2.SecurityGroup(this, 'FargateServiceSecurityGroup', {
-      vpc,
-      description: 'Security group for Fargate service',
-      allowAllOutbound: true,
-    });
-    
-    fargateSecurityGroup.addIngressRule(
-      albSecurityGroup,
-      ec2.Port.tcp(80),
-      'Allow traffic from ALB'
-    );
-    
-    // Create ALB
-    const alb = new elb.ApplicationLoadBalancer(this, 'WebLoadBalancer', {
-      vpc,
-      internetFacing: true,
-      loadBalancerName: `${props.projectPrefix}-dynamic-webpage-alb`,
-      securityGroup: albSecurityGroup,
-    });
-    /*
-    // Create HTTPS Listener with certificate
-    const httpsListener = alb.addListener('HttpsListener', {
-      port: 443,
-      protocol: elb.ApplicationProtocol.HTTPS,
-      certificates: [props.certificate],
-      open: true,
-    });
-    
-    // Create HTTP Listener that redirects to HTTPS
-    const httpListener = alb.addListener('HttpListener', {
-      port: 80,
-      protocol: elb.ApplicationProtocol.HTTP,
-      open: true,
-    });
-    
-    httpListener.addAction('HttpRedirect', {
-      action: elb.ListenerAction.redirect({
-        port: '443',
-        protocol: 'HTTPS',
-        permanent: true,
-      }),
-    });*/
-    
-    // Update ECS Cluster to use the VPC
-    //cluster.enableFargateCapacityProviders();
-    
     // Create Task Definition
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'WebTaskDef', {
       memoryLimitMiB: 512,
@@ -138,35 +66,11 @@ export class DynamicWebpageStack extends cdk.Stack {
       cluster,
       taskDefinition,
       desiredCount: 1,
-      securityGroups: [fargateSecurityGroup],
+      serviceName: `${props.projectPrefix}-web-service`,
       assignPublicIp: false,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
     });
     
-    // Create Target Group
-    const targetGroup = new elb.ApplicationTargetGroup(this, 'WebTargetGroup', {
-      vpc,
-      port: 80,
-      protocol: elb.ApplicationProtocol.HTTP,
-      targetType: elb.TargetType.IP,
-      healthCheck: {
-        path: '/',
-        interval: cdk.Duration.seconds(60),
-        timeout: cdk.Duration.seconds(5),
-        healthyThresholdCount: 2,
-        unhealthyThresholdCount: 2,
-      },
-    });
-    /*
-    // Add target group to the HTTPS listener
-    httpsListener.addTargetGroups('TargetGroups', {
-      targetGroups: [targetGroup],
-    });
-    */
-    // Register service with target group
-    targetGroup.addTarget(fargateService);
-    
-    // Add autoscaling
     const scaling = fargateService.autoScaleTaskCount({
       maxCapacity: 4,
       minCapacity: 1,
@@ -176,12 +80,5 @@ export class DynamicWebpageStack extends cdk.Stack {
       targetUtilizationPercent: 70,
     });
     
-    // Add DNS record
-    const dynamicRecord = new r53.ARecord(this, 'DynamicWebRecord', {
-      zone: props.hostedZone,
-      recordName: `${props.domainName}`,
-      target: r53.RecordTarget.fromAlias(new route53Targets.LoadBalancerTarget(alb)),
-    });
-
   }
 }
