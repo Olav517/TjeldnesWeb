@@ -57,11 +57,11 @@ jobs:
           role-to-assume: "arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.AWS_IAM_ROLE_NAME }}"
           aws-region: ${{ env.AWS_REGION }}
 
-#      - name: push docker image to ECR
-#        if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
-#        run: |
-#          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_ECR_REPO_URI }}
-#          docker push ${{ env.AWS_ECR_REPO_URI }}:${{ env.AWS_ECR_IMAGE_TAG }}
+      - name: push docker image to ECR
+        if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+        run: |
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_ECR_REPO_URI }}
+          docker push ${{ env.AWS_ECR_REPO_URI }}:${{ env.AWS_ECR_IMAGE_TAG }}
 
       - name: trigger deployment pipeline
         if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
