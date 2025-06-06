@@ -4,7 +4,7 @@ import '../styles/hangman.css';
 const words = ['TYPESCRIPT', 'REACT', 'JAVASCRIPT', 'PROGRAMMING', 'DEVELOPER', 'VITE'];
 
 function Hangman() {
-  const [word] = useState(() => words[Math.floor(Math.random() * words.length)]);
+  const [word, setWord] = useState(() => words[Math.floor(Math.random() * words.length)]);
   const [guessedLetters, setGuessedLetters] = useState<Set<string>>(new Set());
   const [remainingGuesses, setRemainingGuesses] = useState(6);
 
@@ -45,7 +45,9 @@ function Hangman() {
   };
 
   const resetGame = () => {
-    window.location.reload();
+    setWord(words[Math.floor(Math.random() * words.length)]);
+    setGuessedLetters(new Set());
+    setRemainingGuesses(6);
   };
 
   return (
