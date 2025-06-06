@@ -1,12 +1,35 @@
+.sidebar-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 1000;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
 .sidebar {
   width: 200px;
   height: 100vh;
-  background-color: #242424;  /* Match the default Vite/React dark theme */
-  position: fixed;
-  border-right: 1px solid #333; /* Subtle border for separation */
-  left: 0;
-  top: 0;
+  background-color: #242424;
+  border-right: 1px solid #333;
   padding: 20px;
+}
+
+.sidebar-container.closed {
+  transform: translateX(-200px);
+}
+
+.sidebar-toggle {
+  position: absolute;
+  right: -40px;
+  top: 20px;
+  background: #242424;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 0 4px 4px 0;
 }
 
 .sidebar nav ul {

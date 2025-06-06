@@ -107,7 +107,7 @@ export class DynamicWebpageStack extends cdk.Stack {
     // Update ECS Cluster to use the VPC
     cluster.enableFargateCapacityProviders();
     
-    // Create Task Definition
+    // Create Task Definition with deployment settings
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'WebTaskDef', {
       memoryLimitMiB: 512,
       cpu: 256,
@@ -130,11 +130,11 @@ export class DynamicWebpageStack extends cdk.Stack {
     });
     
     container.addPortMappings({
-      containerPort: 80,  // Make sure this matches the port your application listens on
+      containerPort: 80,
       protocol: ecs.Protocol.TCP,
     });
     
-    // Create Fargate Service
+    // Create Fargate Service with deployment configuration
     const fargateService = new ecs.FargateService(this, 'WebFargateService', {
       cluster,
       taskDefinition,
@@ -142,7 +142,21 @@ export class DynamicWebpageStack extends cdk.Stack {
       securityGroups: [fargateSecurityGroup],
       assignPublicIp: false,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      circuitBreaker: { rollback: true },  // Enable rollback on deployment failure
+      deploymentController: {
+        type: ecs.DeploymentControllerType.ECS,  // Use ECS rolling deployment
+      },
+      maxHealthyPercent: 200,      // Allow running up to double the desired count during deployment
+      minHealthyPercent: 50,       // Keep at least half running during updates
     });
+
+    // Enable deployment circuit breaker at the L1 construct level
+    const cfnFargateService = fargateService.node.defaultChild as ecs.CfnService;
+    cfnFargateService.deploymentConfiguration = {
+      deploymentCircuitBreaker: { enable: true, rollback: true },
+      maximumPercent: 200,
+      minimumHealthyPercent: 50,
+    };
     
     // Create Target Group
     const targetGroup = new elb.ApplicationTargetGroup(this, 'WebTargetGroup', {
