@@ -121,13 +121,17 @@ export class DynamicWebpageStack extends cdk.Stack {
     );
     
     // Add container to task definition using the ECR image
+    const deploymentVersion = Date.now().toString();
     const container = taskDefinition.addContainer('WebContainer', {
       image: ecs.ContainerImage.fromEcrRepository(ecrRepo, props.imageTag ?? 'latest'),
       environment: {
         NODE_ENV: 'production',
-        DEPLOYMENT_ID: Date.now().toString(), // Force new deployment by changing environment
+        VERSION: deploymentVersion,  // Add version to force new deployment
       },
-      logging: ecs.LogDrivers.awsLogs({ streamPrefix: `${props.projectPrefix}-web` }),
+      logging: ecs.LogDrivers.awsLogs({ 
+        streamPrefix: `${props.projectPrefix}-web`,
+        logRetention: cdk.aws_logs.RetentionDays.ONE_MONTH 
+      }),
     });
     
     container.addPortMappings({
@@ -159,14 +163,8 @@ export class DynamicWebpageStack extends cdk.Stack {
       minimumHealthyPercent: 50,
     };
     
-    // Add tags to help track deployments
+    // Add deployment tracking tag
     cdk.Tags.of(taskDefinition).add('DeploymentTimestamp', new Date().toISOString());
-    
-    // Update the service's task definition on every deployment
-    const cfnTaskDef = taskDefinition.node.defaultChild as ecs.CfnTaskDefinition;
-    cfnTaskDef.addPropertyOverride('ContainerDefinitions.0.Image', 
-      `${ecrRepo.repositoryUri}:${props.imageTag ?? 'LATEST'}`
-    );
     
     // Create Target Group
     const targetGroup = new elb.ApplicationTargetGroup(this, 'WebTargetGroup', {
