@@ -19,7 +19,7 @@ export interface Props extends cdk.StackProps {
      */
     domainName: string
     projectPrefix: string;
-
+    imageTag?: string; // Optional tag for the ECR image, defaults to 'latest'
     hostedZone: r53.HostedZone;        
     certificate: acm.ICertificate;
 }
@@ -113,9 +113,16 @@ export class DynamicWebpageStack extends cdk.Stack {
       cpu: 256,
     });
     
-    // Add container to task definition
+    // Get reference to existing ECR repository
+    const ecrRepo = ecr.Repository.fromRepositoryName(
+      this,
+      'ExistingRepo',
+      `${props.projectPrefix}-project-repo`
+    );
+    
+    // Add container to task definition using the ECR image
     const container = taskDefinition.addContainer('WebContainer', {
-      image: ecs.ContainerImage.fromRegistry('nginx:latest'),
+      image: ecs.ContainerImage.fromEcrRepository(ecrRepo, props.imageTag ?? 'latest'),
       environment: {
         NODE_ENV: 'production',
       },
@@ -123,7 +130,7 @@ export class DynamicWebpageStack extends cdk.Stack {
     });
     
     container.addPortMappings({
-      containerPort: 80,
+      containerPort: 80,  // Make sure this matches the port your application listens on
       protocol: ecs.Protocol.TCP,
     });
     
