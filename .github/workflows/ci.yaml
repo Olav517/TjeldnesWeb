@@ -23,7 +23,7 @@ jobs:
           node-version: 22.14.0
       - name:  Set env vars 1
         run: |
-          echo "AWS_ECR_REPO=${{ env.AWS_PROJECT_PREFIX }}-repo" >> $GITHUB_ENV
+          echo "AWS_ECR_REPO=${{ env.AWS_PROJECT_PREFIX }}-project-repo" >> $GITHUB_ENV
       - name:  Set env vars 2
         run: |
           echo "AWS_ARTIFACT_BUCKET_NAME=${{ env.AWS_PROJECT_PREFIX }}-build-artifact-${{ env.AWS_ACCOUNT_ID }}-${{ env.AWS_REGION }}" >> $GITHUB_ENV
