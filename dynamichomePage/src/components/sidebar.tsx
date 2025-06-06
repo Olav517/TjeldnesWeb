@@ -12,8 +12,11 @@ function Sidebar() {
           <li>
             <Link to="/about">About</Link>
           </li>
-             <li>
+          <li>
             <Link to="/resume">Resume</Link>
+          </li>
+          <li>
+            <Link to="/hangman">Hangman Game</Link>
           </li>
         </ul>
       </nav>
@@ -22,4 +25,3 @@ function Sidebar() {
 }
 
 export default Sidebar
-// afs

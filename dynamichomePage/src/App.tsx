@@ -3,6 +3,7 @@ import Home from './pages/home'
 import About from './pages/about'
 import Sidebar from './components/sidebar'
 import Resume from './pages/resume'
+import Hangman from './pages/hangman'
 import './App.css'
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/resume" element={<Resume />} />
+            <Route path="/hangman" element={<Hangman />} />
           </Routes>
         </div>
       </div>
