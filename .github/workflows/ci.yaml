@@ -33,7 +33,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          cd dynamicHomePage
+          cd dynamichomePage
           npm ci
           docker build -t ${{ env.AWS_ECR_REPO_URI }}:${{ env.AWS_ECR_IMAGE_TAG }} .
 
