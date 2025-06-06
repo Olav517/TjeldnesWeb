@@ -85,6 +85,11 @@ export class BuildArtifactStack extends cdk.Stack {
     })
     artifactBucket.grantPut(role)
 
-    repository.grantPullPush(role)
+    role.addToPolicy(
+      new iam.PolicyStatement({
+        actions: ["ecr:*"],
+        resources: [repository.repositoryArn],
+      }),
+    )
   }
 }
