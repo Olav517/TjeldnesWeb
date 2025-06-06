@@ -1,0 +1,20 @@
+.pdf-container {
+  background-color: #242424;
+  border-radius: 8px;
+  position: fixed;
+  left: 220px;  /* Align with sidebar width */
+  right: 20px;  /* Add some padding on the right */
+  top: 20px;    /* Add some padding on the top */
+  bottom: 20px; /* Add some padding on the bottom */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pdf-container embed {
+  width: 100%;
+  max-width: 850px;
+  height: 100%;
+  border: none;
+  border-radius: 4px;
+}

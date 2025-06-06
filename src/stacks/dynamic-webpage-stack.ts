@@ -177,7 +177,7 @@ export class DynamicWebpageStack extends cdk.Stack {
     });
     
     // Add DNS record
-    const dynamicRecord = new r53.ARecord(this, 'DynamicWebRecord', {
+    new r53.ARecord(this, 'DynamicWebRecord', {
       zone: props.hostedZone,
       recordName: `${props.domainName}`,
       target: r53.RecordTarget.fromAlias(new route53Targets.LoadBalancerTarget(alb)),

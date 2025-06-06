@@ -1,0 +1,29 @@
+.sidebar {
+  width: 200px;
+  height: 100vh;
+  background-color: #242424;  /* Match the default Vite/React dark theme */
+  position: fixed;
+  border-right: 1px solid #333; /* Subtle border for separation */
+  left: 0;
+  top: 0;
+  padding: 20px;
+}
+
+.sidebar nav ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.sidebar nav ul li {
+  margin: 20px 0;
+}
+
+.sidebar nav ul li a {
+  color: #6f6f76;
+  text-decoration: none;
+  font-size: 1.1em;
+}
+
+.sidebar nav ul li a:hover {
+  color: #fafafd;
+}
