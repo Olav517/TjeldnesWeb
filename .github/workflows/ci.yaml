@@ -4,11 +4,15 @@ on:
     - "**"
 
 env:
+  AWS_PORJECT_PREFIX: "tjeldnes-web"
   AWS_ACCOUNT_ID: "635675040131"
   AWS_ARTIFACT_BUCKET_NAME: "tjeldnes-web-build-artifact-635675040131-eu-central-1"
   AWS_DEPLOYMENT_PIPELINE_NAME: "tjeldnes-web-pipeline"
   AWS_IAM_ROLE_NAME: "github-actions-role"
   AWS_REGION: "eu-central-1"
+  AWS_ECR_REPO: "tjeldnes-web-api"
+  AWS_ECR_REPO_URI: "635675040131.dkr.ecr.eu-central-1.amazonaws.com/tjeldnes-web-api"
+  AWS_ECR_IMAGE_TAG: "latest"
 
 jobs:
   build:
@@ -26,17 +30,18 @@ jobs:
           cd homePage
           npm ci
           npm run build
-        #¸working-directory: ./home-page
+
+      - name: Build Docker image
+        run: |
+          cd dynamichomePage
+          npm ci
+          docker build -t ${{ env.AWS_ECR_REPO_URI }}:${{ env.AWS_ECR_IMAGE_TAG }} .
 
       - name: Verify that infra synthesizes
         run: |
           npm ci
           npx cdk synth
-#      - name: Build webpage
-#        run: |
-#          npm ci
-#          npm run build
-#        working-directory: ./home-page
+
       - name: create zip of cdk source code
         run: zip -r "cdk-source.zip" cdk.json src package-lock.json package.json tsconfig.json cdk.context.json homePage/dist APIs
 
@@ -46,7 +51,13 @@ jobs:
         with:
           role-to-assume: "arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.AWS_IAM_ROLE_NAME }}"
           aws-region: ${{ env.AWS_REGION }}
-          
+
+      #- name: push docker image to ECR
+      #  if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+      #  run: |
+      #    aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_ECR_REPO_URI }}
+      #    docker push ${{ env.AWS_ECR_REPO_URI }}:${{ env.AWS_ECR_IMAGE_TAG }}
+
       - name: trigger deployment pipeline
         if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
         run: |

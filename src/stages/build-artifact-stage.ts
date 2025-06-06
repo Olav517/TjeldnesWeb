@@ -4,6 +4,7 @@ import { BuildArtifactStack } from "../stacks/build-artifact-stack"
 
 interface Props extends cdk.StageProps {
   bucketName: string
+  projectPrefix: string
   trustedRepositories: {
     name: string
     owner: string
@@ -17,7 +18,8 @@ export class BuildArtifactStage extends cdk.Stage {
     new BuildArtifactStack(this, "build-artifact", {
       description: "Contains the resources needed for a CI/CD build pipeline thats automatically populated by a github repo",
       bucketName: props.bucketName,
-      trustedRepositories: props.trustedRepositories
+      trustedRepositories: props.trustedRepositories,
+      projectPrefix: props.projectPrefix,
     })
   }
 }

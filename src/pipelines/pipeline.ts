@@ -51,7 +51,8 @@ export class PipelineStack extends cdk.Stack {
                 name: "TjeldnesWeb",
                 owner: "Olav517"
               }
-            ]
+            ],
+            projectPrefix: projectPrefix,
         })
     )
 
