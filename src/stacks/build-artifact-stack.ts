@@ -84,5 +84,7 @@ export class BuildArtifactStack extends cdk.Stack {
       assumedBy: principal,
     })
     artifactBucket.grantPut(role)
+
+    repository.grantPullPush(role)
   }
 }
