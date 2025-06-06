@@ -23,12 +23,12 @@ jobs:
           node-version: 22.14.0
       - name:  Set env vars
         run: |
-          echo "AWS_ARTIFACT_BUCKET_NAME="${{ env.AWS_PROJECT_PREFIX }}-build-artifact-${{ env.AWS_ACCOUNT_ID }}-${{ env.AWS_REGION }}" >> $GITHUB_ENV
+          echo "AWS_ARTIFACT_BUCKET_NAME=${{ env.AWS_PROJECT_PREFIX }}-build-artifact-${{ env.AWS_ACCOUNT_ID }}-${{ env.AWS_REGION }}" >> $GITHUB_ENV
           echo "AWS_DEPLOYMENT_PIPELINE_NAME=${{ env.AWS_PROJECT_PREFIX }}-pipeline" >> $GITHUB_ENV
           echo "AWS_IAM_ROLE_NAME=${{ env.AWS_IAM_ROLE_NAME }}" >> $GITHUB_ENV
           echo "AWS_REGION=${{ env.AWS_REGION }}" >> $GITHUB_ENV
-          echo "AWS_ECR_REPO="${{ env.AWS_PROJECT_PREFIX }}-repo" >> $GITHUB_ENV
-          echo "AWS_ECR_REPO_URI="${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.AWS_ECR_REPO }}" >> $GITHUB_ENV
+          echo "AWS_ECR_REPO=${{ env.AWS_PROJECT_PREFIX }}-repo" >> $GITHUB_ENV
+          echo "AWS_ECR_REPO_URI=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.AWS_ECR_REPO }}" >> $GITHUB_ENV
       - name: Build webpage
         run: |
           cd homePage
