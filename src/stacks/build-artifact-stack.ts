@@ -84,11 +84,11 @@ export class BuildArtifactStack extends cdk.Stack {
       assumedBy: principal,
     })
     artifactBucket.grantPut(role)
-
+    repository.grantPullPush(role)
     role.addToPolicy(
       new iam.PolicyStatement({
-        actions: ["ecr:*"],
-        resources: [repository.repositoryArn],
+        actions: ["ecr:GetAuthorizationToken"],
+        resources: ["*"],
       }),
     )
   }
