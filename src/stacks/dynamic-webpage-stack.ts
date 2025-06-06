@@ -165,7 +165,7 @@ export class DynamicWebpageStack extends cdk.Stack {
     // Update the service's task definition on every deployment
     const cfnTaskDef = taskDefinition.node.defaultChild as ecs.CfnTaskDefinition;
     cfnTaskDef.addPropertyOverride('ContainerDefinitions.0.Image', 
-      `${ecrRepo.repositoryUri}:${props.imageTag ?? '$LATEST'}`
+      `${ecrRepo.repositoryUri}:${props.imageTag ?? 'LATEST'}`
     );
     
     // Create Target Group
