@@ -125,6 +125,7 @@ export class DynamicWebpageStack extends cdk.Stack {
       image: ecs.ContainerImage.fromEcrRepository(ecrRepo, props.imageTag ?? 'latest'),
       environment: {
         NODE_ENV: 'production',
+        DEPLOYMENT_ID: Date.now().toString(), // Force new deployment by changing environment
       },
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: `${props.projectPrefix}-web` }),
     });
@@ -157,6 +158,15 @@ export class DynamicWebpageStack extends cdk.Stack {
       maximumPercent: 200,
       minimumHealthyPercent: 50,
     };
+    
+    // Add tags to help track deployments
+    cdk.Tags.of(taskDefinition).add('DeploymentTimestamp', new Date().toISOString());
+    
+    // Update the service's task definition on every deployment
+    const cfnTaskDef = taskDefinition.node.defaultChild as ecs.CfnTaskDefinition;
+    cfnTaskDef.addPropertyOverride('ContainerDefinitions.0.Image', 
+      `${ecrRepo.repositoryUri}:${props.imageTag ?? '$LATEST'}`
+    );
     
     // Create Target Group
     const targetGroup = new elb.ApplicationTargetGroup(this, 'WebTargetGroup', {
