@@ -4,14 +4,14 @@ on:
     - "**"
 
 env:
-  AWS_PORJECT_PREFIX: "tjeldnes-web"
+  AWS_PROJECT_PREFIX: "tjeldnes-web"
   AWS_ACCOUNT_ID: "635675040131"
   AWS_ARTIFACT_BUCKET_NAME: "tjeldnes-web-build-artifact-635675040131-eu-central-1"
   AWS_DEPLOYMENT_PIPELINE_NAME: "tjeldnes-web-pipeline"
   AWS_IAM_ROLE_NAME: "github-actions-role"
   AWS_REGION: "eu-central-1"
-  AWS_ECR_REPO: "tjeldnes-web-api"
-  AWS_ECR_REPO_URI: "635675040131.dkr.ecr.eu-central-1.amazonaws.com/tjeldnes-web-api"
+  AWS_ECR_REPO: "${AWS_PROJECT_PREFIX}-repo"
+  AWS_ECR_REPO_URI: "${AWS_ACCOUNT_ID}.dkr.ecr.eu-central-1.amazonaws.com/${AWS_ECR_REPO}"
   AWS_ECR_IMAGE_TAG: "latest"
 
 jobs:

@@ -40,13 +40,6 @@ export class DynamicWebpageStack extends cdk.Stack {
       clusterName: `${props.projectPrefix}-cluster`,
       containerInsights: true,
     });
-
-    
-    const repository = new ecr.Repository(this, 'WebRepository', {
-      repositoryName: `${props.projectPrefix}-repo`,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-
     
 
     const albSecurityGroup = new ec2.SecurityGroup(this, 'AlbSecurityGroup', {
