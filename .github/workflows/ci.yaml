@@ -21,13 +21,14 @@ jobs:
       - uses: actions/setup-node@v4.0.2
         with:
           node-version: 22.14.0
-      - name:  Set env vars
+      - name:  Set env vars 1
+        run: |
+          echo "AWS_ECR_REPO=${{ env.AWS_PROJECT_PREFIX }}-repo" >> $GITHUB_ENV
+      - name:  Set env vars 2
         run: |
           echo "AWS_ARTIFACT_BUCKET_NAME=${{ env.AWS_PROJECT_PREFIX }}-build-artifact-${{ env.AWS_ACCOUNT_ID }}-${{ env.AWS_REGION }}" >> $GITHUB_ENV
           echo "AWS_DEPLOYMENT_PIPELINE_NAME=${{ env.AWS_PROJECT_PREFIX }}-pipeline" >> $GITHUB_ENV
-          echo "AWS_IAM_ROLE_NAME=${{ env.AWS_IAM_ROLE_NAME }}" >> $GITHUB_ENV
           echo "AWS_REGION=${{ env.AWS_REGION }}" >> $GITHUB_ENV
-          echo "AWS_ECR_REPO=${{ env.AWS_PROJECT_PREFIX }}-repo" >> $GITHUB_ENV
           echo "AWS_ECR_REPO_URI=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.AWS_ECR_REPO }}" >> $GITHUB_ENV
       - name: Build webpage
         run: |
