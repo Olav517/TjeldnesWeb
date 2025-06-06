@@ -56,7 +56,7 @@ export class BuildArtifactStack extends cdk.Stack {
     })
     
     const repository = new ecr.Repository(this, 'WebRepository', {
-      repositoryName: `${props.projectPrefix}-repo`,
+      repositoryName: `${props.projectPrefix}-project-repo`,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
