@@ -44,7 +44,7 @@ export class DynamicWebpageStack extends cdk.Stack {
     const cluster = new ecs.Cluster(this, 'WebCluster', {
       vpc,
       clusterName: `${props.projectPrefix}-cluster`,
-      containerInsights: true,
+      containerInsights: true
     });
     
 
@@ -250,29 +250,29 @@ export class DynamicWebpageStack extends cdk.Stack {
     authenticatedTargetGroup.addTarget(fargateService);
     unauthenticatedTargetGroup.addTarget(fargateService);
 
-    // Add protected paths rule with authentication
+    // Configure the listener rules for authentication
     if (props.protectedPaths && props.protectedPaths.length > 0) {
+      // First add the protected paths rule with authentication
       httpsListener.addAction('AuthenticatedAction', {
         action: elb.ListenerAction.authenticateOidc({
           authorizationEndpoint: domain.baseUrl() + '/oauth2/authorize',
           tokenEndpoint: domain.baseUrl() + '/oauth2/token',
           userInfoEndpoint: domain.baseUrl() + '/oauth2/userInfo',
           clientId: client.userPoolClientId,
-          clientSecret: client.userPoolClientSecret.toString(),
+          clientSecret: cdk.SecretValue.unsafePlainText(client.userPoolClientSecret?.toString() || ''),
           issuer: `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`,
           next: elb.ListenerAction.forward([authenticatedTargetGroup])
         }),
         conditions: [
           elb.ListenerCondition.pathPatterns(props.protectedPaths)
         ],
-        priority: 1
+        priority: 10
       });
     }
 
-    // Add default rule for public paths
+    // Then add the default rule for all other paths
     httpsListener.addAction('DefaultAction', {
-      action: elb.ListenerAction.forward([unauthenticatedTargetGroup]),
-      priority: 2
+      action: elb.ListenerAction.forward([unauthenticatedTargetGroup])
     });
     
     // Add autoscaling
@@ -291,49 +291,5 @@ export class DynamicWebpageStack extends cdk.Stack {
       recordName: `${props.domainName}`,
       target: r53.RecordTarget.fromAlias(new route53Targets.LoadBalancerTarget(alb)),
     });
-
-    // Create Cognito User Pool
-    const userPool = new cognito.UserPool(this, 'WebUserPool', {
-      userPoolName: `${props.projectPrefix}-user-pool`,
-      selfSignUpEnabled: true,
-      signInAliases: {
-        email: true
-      },
-      standardAttributes: {
-        email: {
-          required: true,
-          mutable: true
-        }
-      },
-      passwordPolicy: {
-        minLength: 8,
-        requireLowercase: true,
-        requireUppercase: true,
-        requireDigits: true,
-        requireSymbols: true
-      }
-    });
-
-    // Add domain for hosted UI
-    const domain = userPool.addDomain('CognitoDomain', {
-      cognitoDomain: {
-        domainPrefix: `${props.projectPrefix}-auth`
-      }
-    });
-
-    // Create User Pool Client
-    const client = userPool.addClient('WebClient', {
-      oAuth: {
-        flows: {
-          authorizationCodeGrant: true
-        },
-        scopes: [cognito.OAuthScope.OPENID],
-        callbackUrls: [`https://${props.domainName}/oauth2/idpresponse`]
-      },
-      supportedIdentityProviders: [
-        cognito.UserPoolClientIdentityProvider.COGNITO
-      ]
-    });
-
   }
 }
