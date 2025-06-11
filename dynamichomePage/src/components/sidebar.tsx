@@ -22,6 +22,9 @@ function Sidebar() {
             <li>
               <Link to="/hangman">Hangman Game</Link>
             </li>
+            <li>
+              <Link to="/crossword">Crossword Puzzle</Link>
+            </li>
           </ul>
         </nav>
       </div>
