@@ -25,6 +25,9 @@ function Sidebar() {
             <li>
               <Link to="/crossword">Crossword Puzzle</Link>
             </li>
+            <li>
+              <Link to="/tictactoe">Tic Tac Toe</Link>
+            </li>
           </ul>
         </nav>
       </div>

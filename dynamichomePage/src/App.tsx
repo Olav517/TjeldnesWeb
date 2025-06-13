@@ -5,6 +5,7 @@ import Sidebar from './components/sidebar'
 import Resume from './pages/resume'
 import Hangman from './pages/hangman'
 import Crossword from './pages/crossword'
+import TicTacToe from './pages/tictactoe'
 import './App.css'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
             <Route path="/resume" element={<Resume />} />
             <Route path="/hangman" element={<Hangman />} />
             <Route path="/crossword" element={<Crossword />} />
+            <Route path="/tictactoe" element={<TicTacToe />} />
           </Routes>
         </div>
       </div>

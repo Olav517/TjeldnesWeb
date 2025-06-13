@@ -198,6 +198,7 @@ const Crossword: React.FC = () => {
           break;
         }
       }
+      if (!isCorrect) break;
     }
     
     setComplete(isCorrect);
@@ -254,7 +255,7 @@ const Crossword: React.FC = () => {
         >
           {grid.map((row, rowIndex) => (
             <div key={`row-${rowIndex}`} className="grid-row">
-              {row.map((cell, colIndex) => {
+              {row.map((_, colIndex) => {
                 const isActive = isActiveCell(rowIndex, colIndex);
                 const cellNumber = getCellNumber(rowIndex, colIndex);
                 const isSelected = selectedCell && 
