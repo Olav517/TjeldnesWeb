@@ -96,7 +96,6 @@ const Crossword: React.FC = () => {
     
     const { row, col } = selectedCell;
     const { key } = event;
-    const { rows, cols } = puzzle.size;
 
     if (/^[a-zA-Z]$/.test(key)) {
       // Update the cell with the letter
