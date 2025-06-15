@@ -44,7 +44,7 @@ export class DynamicWebpageStack extends cdk.Stack {
     const cluster = new ecs.Cluster(this, 'WebCluster', {
       vpc,
       clusterName: `${props.projectPrefix}-cluster`,
-      containerInsights: true
+      containerInsights: true 
     });
     
 
@@ -92,7 +92,10 @@ export class DynamicWebpageStack extends cdk.Stack {
       port: 443,
       protocol: elb.ApplicationProtocol.HTTPS,
       certificates: [props.certificate],
-      open: true,
+      defaultAction: elb.ListenerAction.fixedResponse(200, {
+        contentType: 'text/plain',
+        messageBody: 'Default response'
+      })
     });
     
     // Create HTTP Listener that redirects to HTTPS
