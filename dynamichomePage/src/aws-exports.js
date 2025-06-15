@@ -6,8 +6,8 @@ const awsconfig = {
     oauth: {
       domain: 'tjeldnes-web-webapp.auth.eu-central-1.amazoncognito.com',
       scope: ['email', 'openid', 'profile'],
-      redirectSignIn: 'http://localhost:3000/',
-      redirectSignOut: 'http://localhost:3000/',
+      redirectSignIn: 'http://localhost:5173/',
+      redirectSignOut: 'http://localhost:5173/',
       responseType: 'code',
     },
   },
