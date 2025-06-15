@@ -1,2 +1,2 @@
-declare const awsconfig: any;
+ideclare const awsconfig: any;
 export default awsconfig;
