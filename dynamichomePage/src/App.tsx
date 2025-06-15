@@ -7,6 +7,11 @@ import Hangman from './pages/hangman'
 import Crossword from './pages/crossword'
 import TicTacToe from './pages/tictactoe'
 import './App.css'
+import { RequireAuth } from './RequireAuth';
+import { Amplify } from 'aws-amplify';
+import awsconfig from './aws-exports';
+import { Authenticator } from '@aws-amplify/ui-react';
+Amplify.configure(awsconfig);
 
 function App() {
   return (
@@ -19,8 +24,17 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/resume" element={<Resume />} />
             <Route path="/hangman" element={<Hangman />} />
-            <Route path="/crossword" element={<Crossword />} />
-            <Route path="/tictactoe" element={<TicTacToe />} />
+            <Route path="/crossword" element={
+              <RequireAuth>
+                <Crossword />
+              </RequireAuth>
+            } />
+            <Route path="/tictactoe" element={
+              <RequireAuth>
+                <TicTacToe />
+              </RequireAuth>
+            } />
+            <Route path="/login" element={<Authenticator />} />
           </Routes>
         </div>
       </div>
