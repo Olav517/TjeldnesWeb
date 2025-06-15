@@ -9,6 +9,7 @@ import * as elb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import { Service } from 'aws-cdk-lib/aws-servicediscovery';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 
 
 export interface Props extends cdk.StackProps {
@@ -207,6 +208,73 @@ export class DynamicWebpageStack extends cdk.Stack {
       zone: props.hostedZone,
       recordName: `${props.domainName}`,
       target: r53.RecordTarget.fromAlias(new route53Targets.LoadBalancerTarget(alb)),
+    });
+    
+    // --- Cognito User Pool Setup ---
+    const userPool = new cognito.UserPool(this, 'WebUserPool', {
+      selfSignUpEnabled: true,
+      signInAliases: { email: true },
+      autoVerify: { email: true },
+      standardAttributes: {
+        email: { required: true, mutable: false },
+      },
+      passwordPolicy: {
+        minLength: 8,
+        requireLowercase: true,
+        requireUppercase: true,
+        requireDigits: true,
+        requireSymbols: false,
+      },
+      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // Hosted UI domain
+    const userPoolDomain = userPool.addDomain('CognitoDomain', {
+      cognitoDomain: {
+        domainPrefix: `${props.projectPrefix}-webapp`, // must be globally unique
+      },
+    });
+
+    // User Pool Client for web app
+    const userPoolClient = userPool.addClient('WebUserPoolClient', {
+      oAuth: {
+        flows: {
+          authorizationCodeGrant: true,
+        },
+        scopes: [
+          cognito.OAuthScope.OPENID,
+          cognito.OAuthScope.EMAIL,
+          cognito.OAuthScope.PROFILE,
+        ],
+        callbackUrls: [
+          'http://localhost:3000/', // local dev
+          `https://${props.domainName}/`, // production
+        ],
+        logoutUrls: [
+          'http://localhost:3000/',
+          `https://${props.domainName}/`,
+        ],
+      },
+      generateSecret: false,
+      authFlows: {
+        userPassword: true,
+        userSrp: true,
+      },
+      supportedIdentityProviders: [
+        cognito.UserPoolClientIdentityProvider.COGNITO,
+      ],
+    });
+
+    // Output values for frontend config
+    new cdk.CfnOutput(this, 'CognitoUserPoolId', {
+      value: userPool.userPoolId,
+    });
+    new cdk.CfnOutput(this, 'CognitoUserPoolClientId', {
+      value: userPoolClient.userPoolClientId,
+    });
+    new cdk.CfnOutput(this, 'CognitoDomain', {
+      value: userPoolDomain.domainName,
     });
   }
 }

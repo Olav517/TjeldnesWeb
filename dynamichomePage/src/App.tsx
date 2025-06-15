@@ -8,37 +8,40 @@ import Crossword from './pages/crossword'
 import TicTacToe from './pages/tictactoe'
 import './App.css'
 import { RequireAuth } from './RequireAuth';
+import { Authenticator } from '@aws-amplify/ui-react';
 import { Amplify } from 'aws-amplify';
 import awsconfig from './aws-exports';
-import { Authenticator } from '@aws-amplify/ui-react';
+
 Amplify.configure(awsconfig);
 
 function App() {
   return (
-    <Router>
-      <div className="app-container">
-        <Sidebar />
-        <div className="content">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/resume" element={<Resume />} />
-            <Route path="/hangman" element={<Hangman />} />
-            <Route path="/crossword" element={
-              <RequireAuth>
-                <Crossword />
-              </RequireAuth>
-            } />
-            <Route path="/tictactoe" element={
-              <RequireAuth>
-                <TicTacToe />
-              </RequireAuth>
-            } />
-            <Route path="/login" element={<Authenticator />} />
-          </Routes>
+    <Authenticator.Provider>
+      <Router>
+        <div className="app-container">
+          <Sidebar />
+          <div className="content">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/resume" element={<Resume />} />
+              <Route path="/hangman" element={<Hangman />} />
+              <Route path="/crossword" element={
+                <RequireAuth>
+                  <Crossword />
+                </RequireAuth>
+              } />
+              <Route path="/tictactoe" element={
+                <RequireAuth>
+                  <TicTacToe />
+                </RequireAuth>
+              } />
+              <Route path="/login" element={<Authenticator />} />
+            </Routes>
+          </div>
         </div>
-      </div>
-    </Router>
+      </Router>
+    </Authenticator.Provider>
   )
 }
 

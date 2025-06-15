@@ -1,6 +1,18 @@
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
+import { useAuthenticator } from '@aws-amplify/ui-react';
+import { useNavigate } from 'react-router-dom';
 import './sidebar.css'
+
+function LoginButton() {
+  const { signOut, authStatus } = useAuthenticator();
+  const navigate = useNavigate();
+
+  if (authStatus === 'authenticated') {
+    return <button className="sidebar-login-btn" onClick={signOut}>Sign Out</button>;
+  }
+  return <button className="sidebar-login-btn" onClick={() => navigate('/login')}>Sign In</button>;
+}
 
 function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
@@ -30,6 +42,9 @@ function Sidebar() {
             </li>
           </ul>
         </nav>
+        <div style={{ marginTop: 24, textAlign: 'center' }}>
+          <LoginButton />
+        </div>
       </div>
       <button 
         className="sidebar-toggle"
