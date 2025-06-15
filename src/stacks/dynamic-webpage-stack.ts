@@ -248,12 +248,12 @@ export class DynamicWebpageStack extends cdk.Stack {
           cognito.OAuthScope.PROFILE,
         ],
         callbackUrls: [
-          'http://localhost:3000/', // local dev
           `https://${props.domainName}/`, // production
+          'http://localhost:5173/', // local dev
         ],
         logoutUrls: [
-          'http://localhost:3000/',
           `https://${props.domainName}/`,
+          'http://localhost:5173/',
         ],
       },
       generateSecret: false,

@@ -1,10 +1,10 @@
 const awsconfig = {
   Auth: {
     region: 'eu-central-1',
-    userPoolId: 'eu-central-1_EtLI65dHb',
-    userPoolWebClientId: '655bsk374dkhbl93vkhacqm835',
+    userPoolId: 'eu-central-1_ETCFkPKDJ',
+    userPoolWebClientId: '1q6dmagqniqskhlhcdp41ermtt',
     oauth: {
-      domain: 'eu-central-1-etli65dhb.auth.eu-central-1.amazoncognito.com',
+      domain: 'tjeldnes-web-webapp.auth.eu-central-1.amazoncognito.com',
       scope: ['email', 'openid', 'profile'],
       redirectSignIn: 'http://localhost:3000/',
       redirectSignOut: 'http://localhost:3000/',
