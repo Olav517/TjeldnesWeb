@@ -8,7 +8,6 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as elb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
-import * as cognito from 'aws-cdk-lib/aws-cognito';
 import { Service } from 'aws-cdk-lib/aws-servicediscovery';
 
 
@@ -23,11 +22,6 @@ export interface Props extends cdk.StackProps {
     imageTag?: string; // Optional tag for the ECR image, defaults to 'latest'
     hostedZone: r53.HostedZone;        
     certificate: acm.ICertificate;
-    /**
-     * Array of paths that should be protected by authentication
-     * @example ['/admin/*', '/dashboard/*']
-     */
-    protectedPaths?: string[];
 }
 
 export class DynamicWebpageStack extends cdk.Stack {
@@ -148,49 +142,6 @@ export class DynamicWebpageStack extends cdk.Stack {
       protocol: ecs.Protocol.TCP,
     });
 
-    // Create Cognito User Pool
-    const userPool = new cognito.UserPool(this, 'WebUserPool', {
-      userPoolName: `${props.projectPrefix}-user-pool`,
-      selfSignUpEnabled: true,
-      signInAliases: {
-        email: true
-      },
-      standardAttributes: {
-        email: {
-          required: true,
-          mutable: true
-        }
-      },
-      passwordPolicy: {
-        minLength: 8,
-        requireLowercase: true,
-        requireUppercase: true,
-        requireDigits: true,
-        requireSymbols: true
-      }
-    });
-
-    // Add domain for hosted UI
-    const domain = userPool.addDomain('CognitoDomain', {
-      cognitoDomain: {
-        domainPrefix: `${props.projectPrefix}-auth`
-      }
-    });
-
-    // Create User Pool Client
-    const client = userPool.addClient('WebClient', {
-      oAuth: {
-        flows: {
-          authorizationCodeGrant: true
-        },
-        scopes: [cognito.OAuthScope.OPENID],
-        callbackUrls: [`https://${props.domainName}/oauth2/idpresponse`]
-      },
-      supportedIdentityProviders: [
-        cognito.UserPoolClientIdentityProvider.COGNITO
-      ]
-    });
-    
     // Create Fargate Service with deployment configuration
     const fargateService = new ecs.FargateService(this, 'WebFargateService', {
       cluster,
@@ -233,49 +184,12 @@ export class DynamicWebpageStack extends cdk.Stack {
       },
     });
     
-    // Create authenticated and unauthenticated target groups
-    const authenticatedTargetGroup = targetGroup;
-    const unauthenticatedTargetGroup = new elb.ApplicationTargetGroup(this, 'UnauthWebTargetGroup', {
-      vpc,
-      port: 80,
-      protocol: elb.ApplicationProtocol.HTTP,
-      targetType: elb.TargetType.IP,
-      healthCheck: {
-        path: '/',
-        interval: cdk.Duration.seconds(60),
-        timeout: cdk.Duration.seconds(5),
-        healthyThresholdCount: 2,
-        unhealthyThresholdCount: 2,
-      },
-    });
-    
-    // Register service with both target groups
-    authenticatedTargetGroup.addTarget(fargateService);
-    unauthenticatedTargetGroup.addTarget(fargateService);
+    // Register service with target group
+    targetGroup.addTarget(fargateService);
 
-    // Configure the listener rules for authentication
-    if (props.protectedPaths && props.protectedPaths.length > 0) {
-      // First add the protected paths rule with authentication
-      httpsListener.addAction('AuthenticatedAction', {
-        action: elb.ListenerAction.authenticateOidc({
-          authorizationEndpoint: domain.baseUrl() + '/oauth2/authorize',
-          tokenEndpoint: domain.baseUrl() + '/oauth2/token',
-          userInfoEndpoint: domain.baseUrl() + '/oauth2/userInfo',
-          clientId: client.userPoolClientId,
-          clientSecret: cdk.SecretValue.unsafePlainText(client.userPoolClientSecret?.toString() || ''),
-          issuer: `https://cognito-idp.${this.region}.amazonaws.com/${userPool.userPoolId}`,
-          next: elb.ListenerAction.forward([authenticatedTargetGroup])
-        }),
-        conditions: [
-          elb.ListenerCondition.pathPatterns(props.protectedPaths)
-        ],
-        priority: 10
-      });
-    }
-
-    // Then add the default rule for all other paths
+    // Add default rule for all paths (no authentication)
     httpsListener.addAction('DefaultAction', {
-      action: elb.ListenerAction.forward([unauthenticatedTargetGroup])
+      action: elb.ListenerAction.forward([targetGroup])
     });
     
     // Add autoscaling

@@ -83,8 +83,11 @@ export class BuildArtifactStack extends cdk.Stack {
       roleName: props.roleName ?? "github-actions-role",
       assumedBy: principal,
     })
+    
     artifactBucket.grantPut(role)
+    
     repository.grantPullPush(role)
+    
     role.addToPolicy(
       new iam.PolicyStatement({
         actions: ["ecr:GetAuthorizationToken"],
