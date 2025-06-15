@@ -37,7 +37,7 @@
 }
 
 .grid-cell.active {
-  background-color: white;
+  background-color: #222;
   cursor: pointer;
 }
 
@@ -46,7 +46,7 @@
 }
 
 .grid-cell.selected {
-  background-color: #ffeb3b;
+  background-color: #bfa800;
 }
 
 .cell-number {
@@ -66,6 +66,14 @@
   font-size: 20px;
   font-weight: bold;
   text-transform: uppercase;
+  color: #222; /* Default for light mode */
+}
+
+@media (prefers-color-scheme: dark) {
+  .cell-letter {
+    color: #fff !important; /* Improve contrast in dark mode */
+    text-shadow: 0 1px 2px #000, 0 0 2px #000; /* Add subtle outline for readability */
+  }
 }
 
 .clues {

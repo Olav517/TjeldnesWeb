@@ -19,17 +19,25 @@ interface CrosswordPuzzleData {
 
 // Sample puzzle data
 const samplePuzzle: CrosswordPuzzleData = {
-  title: "Simple Crossword",
+  title: "Simple Crossword (That doesnt work yet)",
   size: { rows: 10, cols: 10 },
   clues: [
+    // 1 Across: TIME (0,0) to (0,3)
     { clue: "When it comes to us all", answer: "TIME", direction: 'across', row: 0, col: 0, number: 1 },
-    { clue: "Illuminating invention", answer: "LAMP", direction: 'down', row: 0, col: 0, number: 1 },
-    { clue: "Computer brain", answer: "CPU", direction: 'across', row: 2, col: 2, number: 2 },
-    { clue: "Place to get coffee", answer: "CAFE", direction: 'down', row: 2, col: 2, number: 2 },
-    { clue: "Programming language with hooks", answer: "REACT", direction: 'across', row: 4, col: 0, number: 3 },
-    { clue: "Internet search giant", answer: "GOOGLE", direction: 'across', row: 6, col: 3, number: 4 },
-    { clue: "Cloud service provider", answer: "AWS", direction: 'down', row: 4, col: 4, number: 5 },
-    { clue: "Version control system", answer: "GIT", direction: 'across', row: 8, col: 1, number: 6 }
+    // 1 Down: LAMP (0,2) to (3,2), intersects TIME at 'M'
+    { clue: "Illuminating invention", answer: "LAMP", direction: 'down', row: 0, col: 2, number: 2 },
+    // 2 Across: CPU (2,2) to (2,4), intersects LAMP at 'P'
+    { clue: "Computer brain", answer: "CPU", direction: 'across', row: 2, col: 2, number: 3 },
+    // 2 Down: CAFE (2,4) to (5,4), intersects CPU at 'U'
+    { clue: "Place to get coffee", answer: "CAFE", direction: 'down', row: 2, col: 4, number: 4 },
+    // 3 Across: REACT (4,0) to (4,4), intersects CAFE at 'E'
+    { clue: "Programming language with hooks", answer: "REACT", direction: 'across', row: 4, col: 0, number: 5 },
+    // 4 Down: AWS (4,4) to (6,4), intersects REACT at 'T'
+    { clue: "Cloud service provider", answer: "AWS", direction: 'down', row: 4, col: 4, number: 6 },
+    // 5 Across: GOOGLE (6,2) to (6,7), intersects AWS at 'S'
+    { clue: "Internet search giant", answer: "GOOGLE", direction: 'across', row: 6, col: 2, number: 7 },
+    // 6 Across: GIT (8,1) to (8,3)
+    { clue: "Version control system", answer: "GIT", direction: 'across', row: 8, col: 1, number: 8 }
   ]
 };
 
@@ -96,6 +104,7 @@ const Crossword: React.FC = () => {
     
     const { row, col } = selectedCell;
     const { key } = event;
+
 
     if (/^[a-zA-Z]$/.test(key)) {
       // Update the cell with the letter

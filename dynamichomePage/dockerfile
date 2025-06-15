@@ -20,7 +20,6 @@ COPY . .
 # Debug: List all files after copying source
 RUN ls -l
 
-ENV TSC_COMPILE_ON_ERROR=true
 RUN npm run build
 
 # Debug: List build output
