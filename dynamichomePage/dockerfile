@@ -1,10 +1,29 @@
 # dynamichomePage/Dockerfile
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Debug: Print Node and npm version
+RUN node -v && npm -v
+
 COPY package*.json ./
+
+# Debug: List files after copying package files
+RUN ls -l
+
 RUN npm ci
+
+# Debug: List node_modules after install
+RUN ls -l node_modules
+
 COPY . .
+
+# Debug: List all files after copying source
+RUN ls -l
+
 RUN npm run build
+
+# Debug: List build output
+RUN ls -l dist
 
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
