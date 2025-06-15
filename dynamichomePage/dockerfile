@@ -1,56 +1,12 @@
-FROM node:20-alpine
-
-# Set working directory
+# dynamichomePage/Dockerfile
+FROM node:20-alpine AS builder
 WORKDIR /app
-
-# Copy package.json and package-lock.json
 COPY package*.json ./
-
-# Install dependencies including development dependencies
 RUN npm ci
-
-# Copy the rest of the application
 COPY . .
+RUN npm run build
 
-# Disable TypeScript checks during build for now to avoid build failures
-ENV TSC_COMPILE_ON_ERROR=true
-ENV VITE_APP_ENV=production
-
-# Build the application with --force to continue despite TS errors
-RUN npm run build -- --force || true
-
-# Install express to serve the app
-RUN npm install express cors
-
-# Create server.js file
-RUN echo 'const express = require("express");\n\
-const path = require("path");\n\
-const cors = require("cors");\n\
-const app = express();\n\
-const PORT = process.env.PORT || 80;\n\
-\n\
-// Enable CORS\n\
-app.use(cors());\n\
-\n\
-// Serve static files\n\
-app.use(express.static(path.join(__dirname, "dist")));\n\
-\n\
-// API routes could be added here\n\
-app.get("/api/health", (req, res) => {\n\
-  res.json({ status: "healthy", timestamp: new Date().toISOString() });\n\
-});\n\
-\n\
-// Handle SPA routing - serve index.html for all other requests\n\
-app.get("*", (req, res) => {\n\
-  res.sendFile(path.join(__dirname, "dist", "index.html"));\n\
-});\n\
-\n\
-app.listen(PORT, () => {\n\
-  console.log(`Server running on port ${PORT}`);\n\
-});' > server.js
-
-# Expose port
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
-
-# Start the server
-CMD ["node", "server.js"]
+CMD ["nginx", "-g", "daemon off;"]
