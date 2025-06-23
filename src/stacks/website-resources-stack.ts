@@ -108,7 +108,7 @@ export class WebsiteResourcesStack extends cdk.Stack {
             validation: acm.CertificateValidation.fromDns(props.hostedZone),
         });
         
-        const visitorhandler = new lambda.Function(this, "apiHandler", {
+        const visitorhandler = new lambda.Function(this, "visitorCounterHandler", {
           description: "Handler for the restAPI used to increment visitor counter for cloud resume challenge",
           runtime: lambda.Runtime.PYTHON_3_10,
           code: lambda.Code.fromAsset('APIs/visitorcounter'),
@@ -118,7 +118,7 @@ export class WebsiteResourcesStack extends cdk.Stack {
           }
       })
 
-      const scoreboardhandler = new lambda.Function(this, "apiHandler", {
+      const scoreboardhandler = new lambda.Function(this, "scoreboardHandler", {
         description: "Handler for the restAPI used to increment visitor counter for cloud resume challenge",
         runtime: lambda.Runtime.PYTHON_3_10,
         code: lambda.Code.fromAsset('APIs/scoreboard'),
