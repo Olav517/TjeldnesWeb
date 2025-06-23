@@ -21,7 +21,11 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
-            <Route path="/resume" element={<Resume />} />
+            <Route path="/resume" element={
+              <ProtectedRoute>
+                <Resume />
+              </ProtectedRoute>
+              } />
             <Route path="/hangman" element={<Hangman />} />
             <Route path="/crossword" element={
               <ProtectedRoute>
