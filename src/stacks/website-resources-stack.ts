@@ -27,6 +27,8 @@ export interface Props extends cdk.StackProps {
 export class WebsiteResourcesStack extends cdk.Stack {
     public readonly hostedZoneId: string;
     public readonly hostedZone: r53.HostedZone
+    public readonly visitorCounterTable: dynamoDb.Table;
+    public readonly scoreboardTable: dynamoDb.Table;
 
     constructor(scope: Construct, id: string, props: Props){
         super(scope, id, props);
@@ -90,28 +92,44 @@ export class WebsiteResourcesStack extends cdk.Stack {
             comment: "Points r53 subdomain to the proper cloudfront target"
         })
 
-    const database = new dynamoDb.Table(this, "visitorCounter", {
+    this.visitorCounterTable = new dynamoDb.Table(this, "visitorCounter", {
             partitionKey: {name: 'id', type: dynamoDb.AttributeType.STRING},
             tableName: `${props.projectPrefix}-visitor-counter-2`
         })
-
-        const handler = new lambda.Function(this, "apiHandler", {
-            description: "Handler for the restAPI used to increment visitor counter for cloud resume challenge",
-            runtime: lambda.Runtime.PYTHON_3_10,
-            code: lambda.Code.fromAsset('APIs/visitorcounter'),
-            handler: 'api.handler',
-            environment: {
-                TABLE_NAME: database.tableName
-            }
-        })
+    this.scoreboardTable = new dynamoDb.Table(this, 'Scoreboard', {
+          partitionKey: { name: 'userId', type: dynamoDb.AttributeType.STRING },
+          billingMode: dynamoDb.BillingMode.PAY_PER_REQUEST,
+          removalPolicy: cdk.RemovalPolicy.RETAIN,
+          tableName: props.projectPrefix + '-Scoreboard',
+        });
         
         const apiCert = new acm.Certificate(this, "APICertificate", {
             domainName: props.apiDomainName,
             validation: acm.CertificateValidation.fromDns(props.hostedZone),
         });
+        
+        const visitorhandler = new lambda.Function(this, "apiHandler", {
+          description: "Handler for the restAPI used to increment visitor counter for cloud resume challenge",
+          runtime: lambda.Runtime.PYTHON_3_10,
+          code: lambda.Code.fromAsset('APIs/visitorcounter'),
+          handler: 'api.handler',
+          environment: {
+              TABLE_NAME: this.visitorCounterTable.tableName
+          }
+      })
+
+      const scoreboardhandler = new lambda.Function(this, "apiHandler", {
+        description: "Handler for the restAPI used to increment visitor counter for cloud resume challenge",
+        runtime: lambda.Runtime.PYTHON_3_10,
+        code: lambda.Code.fromAsset('APIs/scoreboard'),
+        handler: 'api.handler',
+        environment: {
+            TABLE_NAME: this.scoreboardTable.tableName
+        }
+    })
 
         const api = new agw.LambdaRestApi(this, "VisitorCounterAPI", {
-            handler: handler,
+            handler: visitorhandler,
             domainName: {
               domainName:props.apiDomainName,
               certificate: apiCert,
@@ -126,8 +144,7 @@ export class WebsiteResourcesStack extends cdk.Stack {
             comment: "Points r53 subdomain to the proper API Gateway target"
         });
 
-        database.grantReadWriteData(handler);
-
-
+        this.visitorCounterTable.grantReadWriteData(visitorhandler);
+        this.scoreboardTable.grantReadWriteData(scoreboardhandler);
 }
 }

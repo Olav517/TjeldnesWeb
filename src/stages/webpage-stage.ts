@@ -5,7 +5,6 @@ import { CertStack } from "../stacks/certificate-stack"
 import { WebsiteResourcesStack } from "../stacks/website-resources-stack"
 import { DynamicWebpageStack } from "../stacks/dynamic-webpage-stack"
 import { primaryRegion, secondaryRegion } from "../config"
-import { ScoreboardStack } from "../stacks/scoreboard-stack"
 
 interface Props extends cdk.StageProps {
   domainName: string
@@ -40,14 +39,9 @@ export class WebpageStage extends cdk.Stage {
       hostedZone: dnsStack.hostedZone,
       projectPrefix: props.projectPrefix,
       domainName: props.domainName,
-      apiDomainName: `api.${props.domainName}/visitorcounter`,
+      apiDomainName: `api.${props.domainName}`,
       certificate: certStack.certificate,
       crossRegionReferences: true,
-    })
-    new ScoreboardStack(this, "scoreboard-table", {
-      projectPrefix: props.projectPrefix,
-      hostedZone: dnsStack.hostedZone,
-      apiDomainName: `api.${props.domainName}/scoreboard`,
     })
 
     new DynamicWebpageStack(this, "dynamic-webpage", {
