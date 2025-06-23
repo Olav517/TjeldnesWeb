@@ -1,17 +1,15 @@
 import { Link } from 'react-router-dom'
 import { useState } from 'react'
-import { useAuthenticator } from '@aws-amplify/ui-react';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from 'react-oidc-context';
 import './sidebar.css'
 
 function LoginButton() {
-  const { signOut, authStatus } = useAuthenticator();
-  const navigate = useNavigate();
+  const auth = useAuth();
 
-  if (authStatus === 'authenticated') {
-    return <button className="sidebar-login-btn" onClick={signOut}>Sign Out</button>;
+  if (auth.isAuthenticated) {
+    return <button className="sidebar-login-btn" onClick={() => auth.removeUser()}>Sign Out</button>;
   }
-  return <button className="sidebar-login-btn" onClick={() => navigate('/login')}>Sign In</button>;
+  return <button className="sidebar-login-btn" onClick={() => auth.signinRedirect()}>Sign In</button>;
 }
 
 function Sidebar() {
