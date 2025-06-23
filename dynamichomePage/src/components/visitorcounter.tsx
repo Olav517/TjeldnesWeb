@@ -7,7 +7,7 @@ const VisitorCounter = () => {
   useEffect(() => {
     const incrementCount = async () => {
       try {
-        const response = await fetch('https://api.test.tjeldnes.com', {
+        const response = await fetch('https://api.test.tjeldnes.com/visitorcounter', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
