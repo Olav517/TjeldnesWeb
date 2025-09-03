@@ -43,7 +43,7 @@ export class WebpageStage extends cdk.Stage {
       certificate: certStack.certificate,
       crossRegionReferences: true,
     })
-/*
+
     new DynamicWebpageStack(this, "dynamic-webpage", {
       description: "Contains the resources needed for a dynamic webpage",
       domainName: `dynamic.${props.domainName}`,
@@ -51,6 +51,6 @@ export class WebpageStage extends cdk.Stage {
       hostedZone: dnsStack.hostedZone,
       certificate: albCertStack.certificate,
       crossRegionReferences: true,
-    })*/
+    })
   }
 }
