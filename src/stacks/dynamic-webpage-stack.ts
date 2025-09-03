@@ -32,7 +32,7 @@ export class DynamicWebpageStack extends cdk.Stack {
     // 1. Create the VPC first
     const vpc = new ec2.Vpc(this, 'WebVpc', {
       maxAzs: 2,
-      natGateways: 1,
+      natGateways: 0,
     });
 
     // 2. Pass the VPC to the ECS cluster
@@ -150,7 +150,7 @@ export class DynamicWebpageStack extends cdk.Stack {
       desiredCount: 1,
       securityGroups: [fargateSecurityGroup],
       assignPublicIp: false,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
+      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
       circuitBreaker: { rollback: true },  // Enable rollback on deployment failure
       deploymentController: {
         type: ecs.DeploymentControllerType.ECS,  // Use ECS rolling deployment
