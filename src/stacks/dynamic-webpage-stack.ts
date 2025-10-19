@@ -23,36 +23,109 @@ export interface Props extends cdk.StackProps {
     imageTag?: string; // Optional tag for the ECR image, defaults to 'latest'
     hostedZone: r53.HostedZone;        
     certificate: acm.ICertificate;
-  /**
-   * Optional CIDR for the VPC created by the stack. Defaults to a safe non-overlapping block.
-   * Use this if you hit CIDR conflicts in your account.
-   */
-  vpcCidr?: string;
 }
 
 export class DynamicWebpageStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: Props) {
     super(scope, id, props);
 
-    // 1. Create the VPC first
-    const vpc = new ec2.Vpc(this, 'WebVpc', {
-      cidr: props.vpcCidr ?? '10.2.0.0/16',
-      maxAzs: 2,
-      natGateways: 0,
+    // 1. Use the default VPC
+    const vpc = ec2.Vpc.fromLookup(this, 'DefaultVPC', {
+      isDefault: true
     });
 
-    // 2. Pass the VPC to the ECS cluster
+    // Create an Internet Gateway (IGW)
+    const igw = new ec2.CfnInternetGateway(this, 'IGW');
+    
+    // Attach the IGW to the VPC
+    new ec2.CfnVPCGatewayAttachment(this, 'VPCGW', {
+      vpcId: vpc.vpcId,
+      internetGatewayId: igw.ref
+    });
+
+    // Create a route table for public subnets
+    const publicRouteTable = new ec2.CfnRouteTable(this, 'PublicRouteTable', {
+      vpcId: vpc.vpcId,
+    });
+
+    // Add a route to the Internet Gateway
+    new ec2.CfnRoute(this, 'PublicRoute', {
+      routeTableId: publicRouteTable.ref,
+      destinationCidrBlock: '0.0.0.0/0',
+      gatewayId: igw.ref,
+    });
+
+    // Create two public subnets in different AZs
+    const publicSubnet1 = new ec2.PublicSubnet(this, 'PublicSubnet1', {
+      vpcId: vpc.vpcId,
+      availabilityZone: vpc.availabilityZones[0],
+      cidrBlock: '10.0.1.0/24',
+      mapPublicIpOnLaunch: true,
+    });
+
+    const publicSubnet2 = new ec2.PublicSubnet(this, 'PublicSubnet2', {
+      vpcId: vpc.vpcId,
+      availabilityZone: vpc.availabilityZones[1],
+      cidrBlock: '10.0.2.0/24',
+      mapPublicIpOnLaunch: true,
+    });
+
+    // Create two isolated subnets in different AZs
+    const isolatedSubnet1 = new ec2.PrivateSubnet(this, 'IsolatedSubnet1', {
+      vpcId: vpc.vpcId,
+      availabilityZone: vpc.availabilityZones[0],
+      cidrBlock: '10.0.3.0/24',
+    });
+
+    const isolatedSubnet2 = new ec2.PrivateSubnet(this, 'IsolatedSubnet2', {
+      vpcId: vpc.vpcId,
+      availabilityZone: vpc.availabilityZones[1],
+      cidrBlock: '10.0.4.0/24',
+    });
+
+    // Create a route table for isolated subnets (no internet access)
+    const isolatedRouteTable = new ec2.CfnRouteTable(this, 'IsolatedRouteTable', {
+      vpcId: vpc.vpcId,
+    });
+
+    // Associate the public subnets with the public route table
+    new ec2.CfnSubnetRouteTableAssociation(this, 'Subnet1RouteTableAssoc', {
+      subnetId: publicSubnet1.subnetId,
+      routeTableId: publicRouteTable.ref,
+    });
+
+    new ec2.CfnSubnetRouteTableAssociation(this, 'Subnet2RouteTableAssoc', {
+      subnetId: publicSubnet2.subnetId,
+      routeTableId: publicRouteTable.ref,
+    });
+
+    // Associate the isolated subnets with the isolated route table
+    new ec2.CfnSubnetRouteTableAssociation(this, 'IsolatedSubnet1RouteTableAssoc', {
+      subnetId: isolatedSubnet1.subnetId,
+      routeTableId: isolatedRouteTable.ref,
+    });
+
+    new ec2.CfnSubnetRouteTableAssociation(this, 'IsolatedSubnet2RouteTableAssoc', {
+      subnetId: isolatedSubnet2.subnetId,
+      routeTableId: isolatedRouteTable.ref,
+    });
+
+    // Tag the isolated subnets so they can be found by the Fargate service
+    cdk.Tags.of(isolatedSubnet1).add('aws-cdk:subnet-type', 'Isolated');
+    cdk.Tags.of(isolatedSubnet2).add('aws-cdk:subnet-type', 'Isolated');
+
+    // Create cluster with the VPC
     const cluster = new ecs.Cluster(this, 'WebCluster', {
       vpc,
       clusterName: `${props.projectPrefix}-cluster`,
       containerInsights: true 
     });
-    
 
     const albSecurityGroup = new ec2.SecurityGroup(this, 'AlbSecurityGroup', {
       vpc,
       description: 'Security group for ALB',
       allowAllOutbound: true,
+      securityGroupName: `${props.projectPrefix}-alb-sg`,
     });
     
     albSecurityGroup.addIngressRule(
@@ -74,18 +147,23 @@ export class DynamicWebpageStack extends cdk.Stack {
       allowAllOutbound: true,
     });
     
-    fargateSecurityGroup.addIngressRule(
+    // Allow traffic from ALB to tasks on port 80. Use the connections API which
+    // deduplicates rules and plays nicer with updates to avoid duplicate-rule errors.
+    fargateSecurityGroup.connections.allowFrom(
       albSecurityGroup,
       ec2.Port.tcp(80),
       'Allow traffic from ALB'
     );
     
-    // Create ALB
+
     const alb = new elb.ApplicationLoadBalancer(this, 'WebLoadBalancer', {
       vpc,
       internetFacing: true,
       loadBalancerName: `${props.projectPrefix}-dynamic-webpage-alb`,
       securityGroup: albSecurityGroup,
+      vpcSubnets: {
+        subnets: [publicSubnet1, publicSubnet2]
+      }
     });
     
     // Create HTTPS Listener with certificate
@@ -156,7 +234,9 @@ export class DynamicWebpageStack extends cdk.Stack {
       desiredCount: 1,
       securityGroups: [fargateSecurityGroup],
       assignPublicIp: false,
-      vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_ISOLATED },
+      vpcSubnets: {
+        subnets: [isolatedSubnet1, isolatedSubnet2]
+      },
       circuitBreaker: { rollback: true },  // Enable rollback on deployment failure
       deploymentController: {
         type: ecs.DeploymentControllerType.ECS,  // Use ECS rolling deployment
