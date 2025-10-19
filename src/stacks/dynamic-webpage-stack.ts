@@ -45,7 +45,40 @@ export class DynamicWebpageStack extends cdk.Stack {
           subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
         }
       ],
-      natGateways: 0  // We don't need NAT Gateways since we're using isolated subnets
+      natGateways: 0,  // We don't need NAT Gateways since we're using isolated subnets
+      gatewayEndpoints: {
+        S3: {
+          service: ec2.GatewayVpcEndpointAwsService.S3
+        }
+      }
+    });
+
+    // Add interface endpoints for ECR and other required AWS services
+    new ec2.InterfaceVpcEndpoint(this, 'EcrDockerEndpoint', {
+      vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER,
+      privateDnsEnabled: true,
+      subnets: {
+        subnetType: ec2.SubnetType.PRIVATE_ISOLATED
+      }
+    });
+
+    new ec2.InterfaceVpcEndpoint(this, 'EcrEndpoint', {
+      vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.ECR,
+      privateDnsEnabled: true,
+      subnets: {
+        subnetType: ec2.SubnetType.PRIVATE_ISOLATED
+      }
+    });
+
+    new ec2.InterfaceVpcEndpoint(this, 'LogsEndpoint', {
+      vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS,
+      privateDnsEnabled: true,
+      subnets: {
+        subnetType: ec2.SubnetType.PRIVATE_ISOLATED
+      }
     });
 
     // Create cluster with the VPC
