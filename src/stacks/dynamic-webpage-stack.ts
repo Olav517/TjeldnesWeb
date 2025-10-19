@@ -23,6 +23,11 @@ export interface Props extends cdk.StackProps {
     imageTag?: string; // Optional tag for the ECR image, defaults to 'latest'
     hostedZone: r53.HostedZone;        
     certificate: acm.ICertificate;
+  /**
+   * Optional CIDR for the VPC created by the stack. Defaults to a safe non-overlapping block.
+   * Use this if you hit CIDR conflicts in your account.
+   */
+  vpcCidr?: string;
 }
 
 export class DynamicWebpageStack extends cdk.Stack {
@@ -31,6 +36,7 @@ export class DynamicWebpageStack extends cdk.Stack {
 
     // 1. Create the VPC first
     const vpc = new ec2.Vpc(this, 'WebVpc', {
+      cidr: props.vpcCidr ?? '10.2.0.0/16',
       maxAzs: 2,
       natGateways: 0,
     });
