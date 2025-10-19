@@ -59,14 +59,14 @@ export class DynamicWebpageStack extends cdk.Stack {
     const publicSubnet1 = new ec2.PublicSubnet(this, 'PublicSubnet1', {
       vpcId: vpc.vpcId,
       availabilityZone: vpc.availabilityZones[0],
-      cidrBlock: '172.31.32.0/20',  // Using a /20 subnet within the VPC range
+      cidrBlock: '172.31.128.0/20',  // Using a higher range to avoid conflicts
       mapPublicIpOnLaunch: true,
     });
 
     const publicSubnet2 = new ec2.PublicSubnet(this, 'PublicSubnet2', {
       vpcId: vpc.vpcId,
       availabilityZone: vpc.availabilityZones[1],
-      cidrBlock: '172.31.48.0/20',  // Next /20 block
+      cidrBlock: '172.31.144.0/20',  // Next /20 block
       mapPublicIpOnLaunch: true,
     });
 
@@ -74,13 +74,13 @@ export class DynamicWebpageStack extends cdk.Stack {
     const isolatedSubnet1 = new ec2.PrivateSubnet(this, 'IsolatedSubnet1', {
       vpcId: vpc.vpcId,
       availabilityZone: vpc.availabilityZones[0],
-      cidrBlock: '172.31.64.0/20',  // Next /20 block
+      cidrBlock: '172.31.160.0/20',  // Next /20 block
     });
 
     const isolatedSubnet2 = new ec2.PrivateSubnet(this, 'IsolatedSubnet2', {
       vpcId: vpc.vpcId,
       availabilityZone: vpc.availabilityZones[1],
-      cidrBlock: '172.31.80.0/20',  // Next /20 block
+      cidrBlock: '172.31.176.0/20',  // Next /20 block
     });
 
     // Create a route table for isolated subnets (no internet access)
