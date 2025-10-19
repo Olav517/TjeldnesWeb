@@ -29,87 +29,24 @@ export class DynamicWebpageStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: Props) {
     super(scope, id, props);
 
-    // 1. Use the default VPC
-    const vpc = ec2.Vpc.fromLookup(this, 'DefaultVPC', {
-      isDefault: true
+    // Create a new VPC with the configuration we need
+    const vpc = new ec2.Vpc(this, 'WebVPC', {
+      ipAddresses: ec2.IpAddresses.cidr('172.31.0.0/16'),
+      maxAzs: 2,
+      subnetConfiguration: [
+        {
+          cidrMask: 20,
+          name: 'Public',
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+        {
+          cidrMask: 20,
+          name: 'Isolated',
+          subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
+        }
+      ],
+      natGateways: 0  // We don't need NAT Gateways since we're using isolated subnets
     });
-
-    // Add new subnets to the VPC
-    const publicSubnet1 = new ec2.Subnet(this, 'PublicSubnet1', {
-      vpcId: vpc.vpcId,
-      availabilityZone: vpc.availabilityZones[0],
-      cidrBlock: '172.31.0.0/20',    // First /20 block
-      mapPublicIpOnLaunch: true,
-    });
-
-    const publicSubnet2 = new ec2.Subnet(this, 'PublicSubnet2', {
-      vpcId: vpc.vpcId,
-      availabilityZone: vpc.availabilityZones[1],
-      cidrBlock: '172.31.16.0/20',   // Second /20 block
-      mapPublicIpOnLaunch: true,
-    });
-
-    const isolatedSubnet1 = new ec2.Subnet(this, 'IsolatedSubnet1', {
-      vpcId: vpc.vpcId,
-      availabilityZone: vpc.availabilityZones[0],
-      cidrBlock: '172.31.32.0/20',   // Third /20 block
-    });
-
-    const isolatedSubnet2 = new ec2.Subnet(this, 'IsolatedSubnet2', {
-      vpcId: vpc.vpcId,
-      availabilityZone: vpc.availabilityZones[1],
-      cidrBlock: '172.31.48.0/20',   // Fourth /20 block
-    });
-
-    // Get or create an Internet Gateway
-    const igw = new ec2.CfnInternetGateway(this, 'IGW');
-    new ec2.CfnVPCGatewayAttachment(this, 'VPCGW', {
-      vpcId: vpc.vpcId,
-      internetGatewayId: igw.ref
-    });
-
-    // Create and configure route tables
-    const publicRouteTable = new ec2.CfnRouteTable(this, 'PublicRouteTable', {
-      vpcId: vpc.vpcId,
-    });
-
-    const isolatedRouteTable = new ec2.CfnRouteTable(this, 'IsolatedRouteTable', {
-      vpcId: vpc.vpcId,
-    });
-
-    // Add internet route to public route table
-    new ec2.CfnRoute(this, 'PublicRoute', {
-      routeTableId: publicRouteTable.ref,
-      destinationCidrBlock: '0.0.0.0/0',
-      gatewayId: igw.ref,
-    });
-
-    // Associate route tables with subnets
-    new ec2.CfnSubnetRouteTableAssociation(this, 'PublicSubnet1RouteTableAssoc', {
-      subnetId: publicSubnet1.subnetId,
-      routeTableId: publicRouteTable.ref,
-    });
-
-    new ec2.CfnSubnetRouteTableAssociation(this, 'PublicSubnet2RouteTableAssoc', {
-      subnetId: publicSubnet2.subnetId,
-      routeTableId: publicRouteTable.ref,
-    });
-
-    new ec2.CfnSubnetRouteTableAssociation(this, 'IsolatedSubnet1RouteTableAssoc', {
-      subnetId: isolatedSubnet1.subnetId,
-      routeTableId: isolatedRouteTable.ref,
-    });
-
-    new ec2.CfnSubnetRouteTableAssociation(this, 'IsolatedSubnet2RouteTableAssoc', {
-      subnetId: isolatedSubnet2.subnetId,
-      routeTableId: isolatedRouteTable.ref,
-    });
-
-    // Tag subnets for discovery
-    cdk.Tags.of(publicSubnet1).add('aws-cdk:subnet-type', 'Public');
-    cdk.Tags.of(publicSubnet2).add('aws-cdk:subnet-type', 'Public');
-    cdk.Tags.of(isolatedSubnet1).add('aws-cdk:subnet-type', 'Isolated');
-    cdk.Tags.of(isolatedSubnet2).add('aws-cdk:subnet-type', 'Isolated');
 
     // Create cluster with the VPC
     const cluster = new ecs.Cluster(this, 'WebCluster', {
@@ -157,10 +94,10 @@ export class DynamicWebpageStack extends cdk.Stack {
       vpc,
       internetFacing: true,
       loadBalancerName: `${props.projectPrefix}-dynamic-webpage-alb`,
-      securityGroup: albSecurityGroup,
-      vpcSubnets: {
-        subnets: [publicSubnet1, publicSubnet2]
-      }
+      vpcSubnets: { 
+        subnetType: ec2.SubnetType.PUBLIC
+      },
+      securityGroup: albSecurityGroup
     });
     
     // Create HTTPS Listener with certificate
@@ -229,11 +166,8 @@ export class DynamicWebpageStack extends cdk.Stack {
       cluster,
       taskDefinition,
       desiredCount: 1,
-      securityGroups: [fargateSecurityGroup],
       assignPublicIp: false,
-      vpcSubnets: {
-        subnets: [isolatedSubnet1, isolatedSubnet2]
-      },
+
       circuitBreaker: { rollback: true },  // Enable rollback on deployment failure
       deploymentController: {
         type: ecs.DeploymentControllerType.ECS,  // Use ECS rolling deployment
