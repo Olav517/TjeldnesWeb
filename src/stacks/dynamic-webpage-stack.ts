@@ -31,7 +31,6 @@ export class DynamicWebpageStack extends cdk.Stack {
 
     // Create a new VPC with the configuration we need
     const vpc = new ec2.Vpc(this, 'WebVPC', {
-      ipAddresses: ec2.IpAddresses.cidr('172.31.0.0/16'),
       maxAzs: 2,
       subnetConfiguration: [
         {
@@ -144,6 +143,7 @@ export class DynamicWebpageStack extends cdk.Stack {
     
     // Add container to task definition using the ECR image
     const deploymentVersion = Date.now().toString();
+
     const container = taskDefinition.addContainer('WebContainer', {
       image: ecs.ContainerImage.fromEcrRepository(ecrRepo, props.imageTag ?? 'latest'),
       environment: {
