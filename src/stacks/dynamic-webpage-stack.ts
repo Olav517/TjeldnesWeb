@@ -34,72 +34,67 @@ export class DynamicWebpageStack extends cdk.Stack {
       isDefault: true
     });
 
-    // Create an Internet Gateway (IGW)
+    // Add new subnets to the VPC
+    const publicSubnet1 = new ec2.Subnet(this, 'PublicSubnet1', {
+      vpcId: vpc.vpcId,
+      availabilityZone: vpc.availabilityZones[0],
+      cidrBlock: '172.31.0.0/20',    // First /20 block
+      mapPublicIpOnLaunch: true,
+    });
+
+    const publicSubnet2 = new ec2.Subnet(this, 'PublicSubnet2', {
+      vpcId: vpc.vpcId,
+      availabilityZone: vpc.availabilityZones[1],
+      cidrBlock: '172.31.16.0/20',   // Second /20 block
+      mapPublicIpOnLaunch: true,
+    });
+
+    const isolatedSubnet1 = new ec2.Subnet(this, 'IsolatedSubnet1', {
+      vpcId: vpc.vpcId,
+      availabilityZone: vpc.availabilityZones[0],
+      cidrBlock: '172.31.32.0/20',   // Third /20 block
+    });
+
+    const isolatedSubnet2 = new ec2.Subnet(this, 'IsolatedSubnet2', {
+      vpcId: vpc.vpcId,
+      availabilityZone: vpc.availabilityZones[1],
+      cidrBlock: '172.31.48.0/20',   // Fourth /20 block
+    });
+
+    // Get or create an Internet Gateway
     const igw = new ec2.CfnInternetGateway(this, 'IGW');
-    
-    // Attach the IGW to the VPC
     new ec2.CfnVPCGatewayAttachment(this, 'VPCGW', {
       vpcId: vpc.vpcId,
       internetGatewayId: igw.ref
     });
 
-    // Create a route table for public subnets
+    // Create and configure route tables
     const publicRouteTable = new ec2.CfnRouteTable(this, 'PublicRouteTable', {
       vpcId: vpc.vpcId,
     });
 
-    // Add a route to the Internet Gateway
+    const isolatedRouteTable = new ec2.CfnRouteTable(this, 'IsolatedRouteTable', {
+      vpcId: vpc.vpcId,
+    });
+
+    // Add internet route to public route table
     new ec2.CfnRoute(this, 'PublicRoute', {
       routeTableId: publicRouteTable.ref,
       destinationCidrBlock: '0.0.0.0/0',
       gatewayId: igw.ref,
     });
 
-    // Create two public subnets in different AZs
-    const publicSubnet1 = new ec2.PublicSubnet(this, 'PublicSubnet1', {
-      vpcId: vpc.vpcId,
-      availabilityZone: vpc.availabilityZones[0],
-      cidrBlock: '172.31.128.0/20',  // Using a higher range to avoid conflicts
-      mapPublicIpOnLaunch: true,
-    });
-
-    const publicSubnet2 = new ec2.PublicSubnet(this, 'PublicSubnet2', {
-      vpcId: vpc.vpcId,
-      availabilityZone: vpc.availabilityZones[1],
-      cidrBlock: '172.31.144.0/20',  // Next /20 block
-      mapPublicIpOnLaunch: true,
-    });
-
-    // Create two isolated subnets in different AZs
-    const isolatedSubnet1 = new ec2.PrivateSubnet(this, 'IsolatedSubnet1', {
-      vpcId: vpc.vpcId,
-      availabilityZone: vpc.availabilityZones[0],
-      cidrBlock: '172.31.160.0/20',  // Next /20 block
-    });
-
-    const isolatedSubnet2 = new ec2.PrivateSubnet(this, 'IsolatedSubnet2', {
-      vpcId: vpc.vpcId,
-      availabilityZone: vpc.availabilityZones[1],
-      cidrBlock: '172.31.176.0/20',  // Next /20 block
-    });
-
-    // Create a route table for isolated subnets (no internet access)
-    const isolatedRouteTable = new ec2.CfnRouteTable(this, 'IsolatedRouteTable', {
-      vpcId: vpc.vpcId,
-    });
-
-    // Associate the public subnets with the public route table
-    new ec2.CfnSubnetRouteTableAssociation(this, 'Subnet1RouteTableAssoc', {
+    // Associate route tables with subnets
+    new ec2.CfnSubnetRouteTableAssociation(this, 'PublicSubnet1RouteTableAssoc', {
       subnetId: publicSubnet1.subnetId,
       routeTableId: publicRouteTable.ref,
     });
 
-    new ec2.CfnSubnetRouteTableAssociation(this, 'Subnet2RouteTableAssoc', {
+    new ec2.CfnSubnetRouteTableAssociation(this, 'PublicSubnet2RouteTableAssoc', {
       subnetId: publicSubnet2.subnetId,
       routeTableId: publicRouteTable.ref,
     });
 
-    // Associate the isolated subnets with the isolated route table
     new ec2.CfnSubnetRouteTableAssociation(this, 'IsolatedSubnet1RouteTableAssoc', {
       subnetId: isolatedSubnet1.subnetId,
       routeTableId: isolatedRouteTable.ref,
@@ -110,7 +105,9 @@ export class DynamicWebpageStack extends cdk.Stack {
       routeTableId: isolatedRouteTable.ref,
     });
 
-    // Tag the isolated subnets so they can be found by the Fargate service
+    // Tag subnets for discovery
+    cdk.Tags.of(publicSubnet1).add('aws-cdk:subnet-type', 'Public');
+    cdk.Tags.of(publicSubnet2).add('aws-cdk:subnet-type', 'Public');
     cdk.Tags.of(isolatedSubnet1).add('aws-cdk:subnet-type', 'Isolated');
     cdk.Tags.of(isolatedSubnet2).add('aws-cdk:subnet-type', 'Isolated');
 
