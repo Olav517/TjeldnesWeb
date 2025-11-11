@@ -28,10 +28,10 @@ export class WebpageStage extends cdk.Stage {
       region: secondaryRegion, // Deploy to us-east-1
     })
     
-    const albCertStack = new CertStack(this, "alb-certificate-stack", {
+    const dynamicCertStack = new CertStack(this, "dynamic-certificate-stack", {
       domainName: `dynamic.${props.domainName}`,
       hostedZoneId: dnsStack.hostedZone.hostedZoneId,
-      region: primaryRegion, // Deploy to eu-central-1
+      region: primaryRegion, // Deploy to eu-central-1 for API Gateway
     })
 
     new WebsiteResourcesStack(this, "website-resources", {
@@ -45,11 +45,11 @@ export class WebpageStage extends cdk.Stage {
     })
 
     new DynamicWebpageStack(this, "dynamic-webpage", {
-      description: "Contains the resources needed for a dynamic webpage",
+      description: "Contains the resources needed for a dynamic webpage with Lambda",
       domainName: `dynamic.${props.domainName}`,
       projectPrefix: props.projectPrefix,
       hostedZone: dnsStack.hostedZone,
-      certificate: albCertStack.certificate,
+      certificate: dynamicCertStack.certificate,
       crossRegionReferences: true,
     })
   }

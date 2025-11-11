@@ -2,7 +2,6 @@ import * as constructs from "constructs"
 import * as cdk from "aws-cdk-lib"
 import * as s3 from "aws-cdk-lib/aws-s3"
 import * as iam from "aws-cdk-lib/aws-iam"
-import * as ecr from "aws-cdk-lib/aws-ecr"
 
 export interface Props extends cdk.StackProps {
   /**
@@ -54,11 +53,6 @@ export class BuildArtifactStack extends cdk.Stack {
       versioned: true,
       eventBridgeEnabled: true
     })
-    
-    const repository = new ecr.Repository(this, 'WebRepository', {
-      repositoryName: `${props.projectPrefix}-project-repo`,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
 
     const oidcProvider = new iam.OpenIdConnectProvider(this, "githubProvider", {
       url: "https://token.actions.githubusercontent.com",
@@ -85,14 +79,5 @@ export class BuildArtifactStack extends cdk.Stack {
     })
     
     artifactBucket.grantPut(role)
-    
-    repository.grantPullPush(role)
-    
-    role.addToPolicy(
-      new iam.PolicyStatement({
-        actions: ["ecr:GetAuthorizationToken"],
-        resources: ["*"],
-      }),
-    )
   }
 }

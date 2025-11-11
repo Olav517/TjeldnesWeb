@@ -8,7 +8,6 @@ env:
   AWS_ACCOUNT_ID: "635675040131"
   AWS_IAM_ROLE_NAME: "github-actions-role"
   AWS_REGION: "eu-central-1"
-  AWS_ECR_IMAGE_TAG: "latest"
 
 jobs:
   build:
@@ -21,26 +20,22 @@ jobs:
       - uses: actions/setup-node@v4.0.2
         with:
           node-version: 22.14.0
-      - name:  Set env vars 1
-        run: |
-          echo "AWS_ECR_REPO=${{ env.AWS_PROJECT_PREFIX }}-project-repo" >> $GITHUB_ENV
-      - name:  Set env vars 2
+      - name:  Set env vars
         run: |
           echo "AWS_ARTIFACT_BUCKET_NAME=${{ env.AWS_PROJECT_PREFIX }}-build-artifact-${{ env.AWS_ACCOUNT_ID }}-${{ env.AWS_REGION }}" >> $GITHUB_ENV
           echo "AWS_DEPLOYMENT_PIPELINE_NAME=${{ env.AWS_PROJECT_PREFIX }}-pipeline" >> $GITHUB_ENV
           echo "AWS_REGION=${{ env.AWS_REGION }}" >> $GITHUB_ENV
-          echo "AWS_ECR_REPO_URI=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.eu-central-1.amazonaws.com/${{ env.AWS_ECR_REPO }}" >> $GITHUB_ENV
-      - name: Build webpage
+      - name: Build static webpage
         run: |
           cd homePage
           npm ci
           npm run build
 
-      - name: Build Docker image
+      - name: Build dynamic webpage for Lambda
         run: |
           cd dynamichomePage
           npm ci
-          docker build -t ${{ env.AWS_ECR_REPO_URI }}:${{ env.AWS_ECR_IMAGE_TAG }} .
+          npm run build
 
       - name: Verify that infra synthesizes
         run: |
@@ -48,7 +43,7 @@ jobs:
           npx cdk synth
 
       - name: create zip of cdk source code
-        run: zip -r "cdk-source.zip" cdk.json src package-lock.json package.json tsconfig.json cdk.context.json homePage/dist APIs
+        run: zip -r "cdk-source.zip" cdk.json src package-lock.json package.json tsconfig.json cdk.context.json homePage/dist dynamichomePage/dist dynamichomePage/lambda APIs
 
       - name: get temporary aws credentials
         if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
@@ -56,12 +51,6 @@ jobs:
         with:
           role-to-assume: "arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.AWS_IAM_ROLE_NAME }}"
           aws-region: ${{ env.AWS_REGION }}
-
-      - name: push docker image to ECR
-        if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
-        run: |
-          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.AWS_ECR_REPO_URI }}
-          docker push ${{ env.AWS_ECR_REPO_URI }}:${{ env.AWS_ECR_IMAGE_TAG }}
 
       - name: trigger deployment pipeline
         if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}

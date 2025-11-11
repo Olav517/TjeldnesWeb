@@ -2,14 +2,13 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as r53 from 'aws-cdk-lib/aws-route53';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
-import * as ecs from 'aws-cdk-lib/aws-ecs';
-import * as ecr from 'aws-cdk-lib/aws-ecr';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as elb from 'aws-cdk-lib/aws-elasticloadbalancingv2';
-import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
+import * as apigatewayv2Integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
-import { Service } from 'aws-cdk-lib/aws-servicediscovery';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 
 
 export interface Props extends cdk.StackProps {
@@ -20,7 +19,6 @@ export interface Props extends cdk.StackProps {
      */
     domainName: string
     projectPrefix: string;
-    imageTag?: string; // Optional tag for the ECR image, defaults to 'latest'
     hostedZone: r53.HostedZone;        
     certificate: acm.ICertificate;
 }
@@ -29,236 +27,74 @@ export class DynamicWebpageStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: Props) {
     super(scope, id, props);
 
-    // Create a new VPC with the configuration we need
-    const vpc = new ec2.Vpc(this, 'WebVPC', {
-      ipAddresses: ec2.IpAddresses.cidr('10.0.0.0/16'),
-      maxAzs: 2,
-      subnetConfiguration: [
-        {
-          cidrMask: 20,
-          name: 'Public',
-          subnetType: ec2.SubnetType.PUBLIC,
-        },
-        {
-          cidrMask: 20,
-          name: 'Isolated',
-          subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-        }
-      ],
-      natGateways: 0,  // We don't need NAT Gateways since we're using isolated subnets
-      gatewayEndpoints: {
-        S3: {
-          service: ec2.GatewayVpcEndpointAwsService.S3
-        }
-      }
-    });
-
-    // Add interface endpoints for ECR and other required AWS services
-    new ec2.InterfaceVpcEndpoint(this, 'EcrDockerEndpoint', {
-      vpc,
-      service: ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER,
-      privateDnsEnabled: true,
-      subnets: {
-        subnetType: ec2.SubnetType.PRIVATE_ISOLATED
-      }
-    });
-
-    new ec2.InterfaceVpcEndpoint(this, 'EcrEndpoint', {
-      vpc,
-      service: ec2.InterfaceVpcEndpointAwsService.ECR,
-      privateDnsEnabled: true,
-      subnets: {
-        subnetType: ec2.SubnetType.PRIVATE_ISOLATED
-      }
-    });
-
-    new ec2.InterfaceVpcEndpoint(this, 'LogsEndpoint', {
-      vpc,
-      service: ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS,
-      privateDnsEnabled: true,
-      subnets: {
-        subnetType: ec2.SubnetType.PRIVATE_ISOLATED
-      }
-    });
-
-    // Create cluster with the VPC
-    const cluster = new ecs.Cluster(this, 'WebCluster', {
-      vpc,
-      clusterName: `${props.projectPrefix}-cluster`,
-      containerInsights: true 
-    });
-
-    const albSecurityGroup = new ec2.SecurityGroup(this, 'AlbSecurityGroup', {
-      vpc,
-      description: 'Security group for ALB',
-      allowAllOutbound: true,
-      securityGroupName: `${props.projectPrefix}-alb-sg`,
-    });
-    
-    albSecurityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(443),
-      'Allow HTTPS traffic'
-    );
-    
-    albSecurityGroup.addIngressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(80),
-      'Allow HTTP traffic'
-    );
-
-    
-    const fargateSecurityGroup = new ec2.SecurityGroup(this, 'FargateServiceSecurityGroup', {
-      vpc,
-      description: 'Security group for Fargate service',
-      allowAllOutbound: true,
-    });
-    
-    // Allow traffic from ALB to tasks on port 80. Use the connections API which
-    // deduplicates rules and plays nicer with updates to avoid duplicate-rule errors.
-    fargateSecurityGroup.connections.allowFrom(
-      albSecurityGroup,
-      ec2.Port.tcp(80),
-      'Allow traffic from ALB'
-    );
-    
-
-    const alb = new elb.ApplicationLoadBalancer(this, 'WebLoadBalancer', {
-      vpc,
-      internetFacing: true,
-      loadBalancerName: `${props.projectPrefix}-dynamic-webpage-alb`,
-      vpcSubnets: { 
-        subnetType: ec2.SubnetType.PUBLIC
-      },
-      securityGroup: albSecurityGroup
-    });
-    
-    // Create HTTPS Listener with certificate
-    const httpsListener = alb.addListener('HttpsListener', {
-      port: 443,
-      protocol: elb.ApplicationProtocol.HTTPS,
-      certificates: [props.certificate],
-      defaultAction: elb.ListenerAction.fixedResponse(200, {
-        contentType: 'text/plain',
-        messageBody: 'Default response'
-      })
-    });
-    
-    // Create HTTP Listener that redirects to HTTPS
-    const httpListener = alb.addListener('HttpListener', {
-      port: 80,
-      protocol: elb.ApplicationProtocol.HTTP,
-      open: true,
-    });
-    
-    httpListener.addAction('HttpRedirect', {
-      action: elb.ListenerAction.redirect({
-        port: '443',
-        protocol: 'HTTPS',
-        permanent: true,
-      }),
-    });
-    
-    // Update ECS Cluster to use the VPC
-    cluster.enableFargateCapacityProviders();
-    
-    // Create Task Definition with deployment settings
-    const taskDefinition = new ecs.FargateTaskDefinition(this, 'WebTaskDef', {
-      memoryLimitMiB: 512,
-      cpu: 256,
-    });
-    
-    // Get reference to existing ECR repository
-    const ecrRepo = ecr.Repository.fromRepositoryName(
-      this,
-      'ExistingRepo',
-      `${props.projectPrefix}-project-repo`
-    );
-    
-    // Add container to task definition using the ECR image
-    const deploymentVersion = Date.now().toString();
-    
-    const container = taskDefinition.addContainer('WebContainer', {
-      image: ecs.ContainerImage.fromEcrRepository(ecrRepo, props.imageTag ?? 'latest'),
+    // Create Lambda function to serve the React app
+    const webFunction = new lambda.Function(this, 'DynamicWebFunction', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'lambda/handler.handler',
+      code: lambda.Code.fromAsset('./dynamichomePage'),
+      memorySize: 512,
+      timeout: cdk.Duration.seconds(10),
+      description: 'Serves the dynamic React website',
+      logRetention: logs.RetentionDays.ONE_MONTH,
       environment: {
         NODE_ENV: 'production',
-        VERSION: deploymentVersion,  // Add version to force new deployment
-      },
-      logging: ecs.LogDrivers.awsLogs({ 
-        streamPrefix: `${props.projectPrefix}-web`,
-        logRetention: cdk.aws_logs.RetentionDays.ONE_MONTH 
-      }),
-    });
-    
-    container.addPortMappings({
-      containerPort: 80,
-      protocol: ecs.Protocol.TCP,
-    });
-
-    // Create Fargate Service with deployment configuration
-    const fargateService = new ecs.FargateService(this, 'WebFargateService', {
-      cluster,
-      taskDefinition,
-      desiredCount: 1,
-      assignPublicIp: false,
-
-      circuitBreaker: { rollback: true },  // Enable rollback on deployment failure
-      deploymentController: {
-        type: ecs.DeploymentControllerType.ECS,  // Use ECS rolling deployment
-      },
-      maxHealthyPercent: 200,      // Allow running up to double the desired count during deployment
-      minHealthyPercent: 50,       // Keep at least half running during updates
-    });
-
-    // Enable deployment circuit breaker at the L1 construct level
-    const cfnFargateService = fargateService.node.defaultChild as ecs.CfnService;
-    cfnFargateService.deploymentConfiguration = {
-      deploymentCircuitBreaker: { enable: true, rollback: true },
-      maximumPercent: 200,
-      minimumHealthyPercent: 50,
-    };
-    
-    // Add deployment tracking tag
-    cdk.Tags.of(taskDefinition).add('DeploymentTimestamp', new Date().toISOString());
-    
-    // Create Target Group
-    const targetGroup = new elb.ApplicationTargetGroup(this, 'WebTargetGroup', {
-      vpc,
-      port: 80,
-      protocol: elb.ApplicationProtocol.HTTP,
-      targetType: elb.TargetType.IP,
-      healthCheck: {
-        path: '/',
-        interval: cdk.Duration.seconds(60),
-        timeout: cdk.Duration.seconds(5),
-        healthyThresholdCount: 2,
-        unhealthyThresholdCount: 2,
       },
     });
-    
-    // Register service with target group
-    targetGroup.addTarget(fargateService);
 
-    // Add default rule for all paths (no authentication)
-    httpsListener.addAction('DefaultAction', {
-      action: elb.ListenerAction.forward([targetGroup])
+    // Create HTTP API Gateway
+    const httpApi = new apigatewayv2.HttpApi(this, 'DynamicWebApi', {
+      apiName: `${props.projectPrefix}-dynamic-web-api`,
+      description: 'HTTP API for dynamic website',
+      corsPreflight: {
+        allowOrigins: ['*'],
+        allowMethods: [apigatewayv2.CorsHttpMethod.GET],
+        allowHeaders: ['*'],
+      },
     });
-    
-    // Add autoscaling
-    const scaling = fargateService.autoScaleTaskCount({
-      maxCapacity: 4,
-      minCapacity: 1,
+
+    // Create Lambda integration
+    const lambdaIntegration = new apigatewayv2Integrations.HttpLambdaIntegration(
+      'DynamicWebIntegration',
+      webFunction
+    );
+
+    // Add catch-all route
+    httpApi.addRoutes({
+      path: '/{proxy+}',
+      methods: [apigatewayv2.HttpMethod.GET],
+      integration: lambdaIntegration,
     });
-    
-    scaling.scaleOnCpuUtilization('CpuScaling', {
-      targetUtilizationPercent: 70,
+
+    // Add root route
+    httpApi.addRoutes({
+      path: '/',
+      methods: [apigatewayv2.HttpMethod.GET],
+      integration: lambdaIntegration,
     });
-    
-    // Add DNS record
+
+    // Create custom domain for API Gateway
+    const domainName = new apigatewayv2.DomainName(this, 'DynamicWebDomain', {
+      domainName: props.domainName,
+      certificate: props.certificate,
+    });
+
+    // Map custom domain to API
+    new apigatewayv2.ApiMapping(this, 'DynamicWebApiMapping', {
+      api: httpApi,
+      domainName: domainName,
+      stage: httpApi.defaultStage,
+    });
+
+    // Add DNS record pointing to API Gateway
     new r53.ARecord(this, 'DynamicWebRecord', {
       zone: props.hostedZone,
-      recordName: `${props.domainName}`,
-      target: r53.RecordTarget.fromAlias(new route53Targets.LoadBalancerTarget(alb)),
+      recordName: props.domainName,
+      target: r53.RecordTarget.fromAlias(
+        new route53Targets.ApiGatewayv2DomainProperties(
+          domainName.regionalDomainName,
+          domainName.regionalHostedZoneId
+        )
+      ),
     });
     
     // --- Cognito User Pool Setup ---
