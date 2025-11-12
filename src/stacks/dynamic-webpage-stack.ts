@@ -31,7 +31,9 @@ export class DynamicWebpageStack extends cdk.Stack {
     const webFunction = new lambda.Function(this, 'DynamicWebFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'lambda/handler.handler',
-      code: lambda.Code.fromAsset('./dynamichomePage'),
+      code: lambda.Code.fromAsset('./dynamichomePage', {
+        exclude: ['node_modules', 'src', '.gitignore', 'dockerfile', 'tsconfig*.json', 'vite.config.*', 'package*.json', 'README.md', 'public', 'index.html'],
+      }),
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
       description: 'Serves the dynamic React website',
