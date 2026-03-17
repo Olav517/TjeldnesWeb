@@ -32,7 +32,7 @@ export class DynamicWebpageStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'lambda/handler.handler',
       code: lambda.Code.fromAsset('./dynamichomePage', {
-        exclude: ['node_modules/**', 'src/**', '*.ts', '*.tsx', 'tsconfig*', 'vite.config.*', 'index.html', 'package*.json', 'README.md', 'dockerfile', 'entrypoint.sh', 'nginx.conf'],
+        exclude: ['node_modules/**', 'src/**', '*.ts', '*.tsx', 'tsconfig*', 'vite.config.*', 'package*.json', 'README.md', 'dockerfile', 'entrypoint.sh', 'nginx.conf'],
       }),
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
