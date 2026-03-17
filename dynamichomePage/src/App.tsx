@@ -17,28 +17,30 @@ function App() {
     <Router>
       <div className="app-container">
         <Sidebar />
-        <div className="content">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/resume" element={
-              <ProtectedRoute>
-                <Resume />
-              </ProtectedRoute>
+        <main className="main-area">
+          <div className="content">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/resume" element={
+                <ProtectedRoute>
+                  <Resume />
+                </ProtectedRoute>
+                } />
+              <Route path="/hangman" element={<Hangman />} />
+              <Route path="/crossword" element={
+                <ProtectedRoute>
+                  <Crossword />
+                </ProtectedRoute>
               } />
-            <Route path="/hangman" element={<Hangman />} />
-            <Route path="/crossword" element={
-              <ProtectedRoute>
-                <Crossword />
-              </ProtectedRoute>
-            } />
-            <Route path="/tictactoe" element={
-              <ProtectedRoute>
-                <TicTacToe />
-              </ProtectedRoute>
-            } />
-          </Routes>
-        </div>
+              <Route path="/tictactoe" element={
+                <ProtectedRoute>
+                  <TicTacToe />
+                </ProtectedRoute>
+              } />
+            </Routes>
+          </div>
+        </main>
       </div>
     </Router>
   );
