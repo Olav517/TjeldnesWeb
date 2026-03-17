@@ -2,6 +2,11 @@ import React from 'react';
 import { useAuth } from 'react-oidc-context';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  // Allow bypassing auth in local development via .env.local
+  if (import.meta.env.VITE_DEV_SKIP_AUTH === 'true') {
+    return <>{children}</>;
+  }
+
   const auth = useAuth();
   if (!auth.isAuthenticated) {
     return (
