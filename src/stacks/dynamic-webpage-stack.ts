@@ -161,6 +161,62 @@ export class DynamicWebpageStack extends cdk.Stack {
     
     // Update ECS Cluster to use the VPC
     cluster.enableFargateCapacityProviders();
+
+    // --- Cognito User Pool Setup (defined before container so IDs can be passed as env vars) ---
+    const userPool = new cognito.UserPool(this, 'WebUserPool', {
+      selfSignUpEnabled: true,
+      signInAliases: { email: true },
+      autoVerify: { email: true },
+      standardAttributes: {
+        email: { required: true, mutable: false },
+      },
+      passwordPolicy: {
+        minLength: 8,
+        requireLowercase: true,
+        requireUppercase: true,
+        requireDigits: true,
+        requireSymbols: false,
+      },
+      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // Hosted UI domain
+    const userPoolDomain = userPool.addDomain('CognitoDomain', {
+      cognitoDomain: {
+        domainPrefix: `${props.projectPrefix}-webapp`, // must be globally unique
+      },
+    });
+
+    // User Pool Client for web app
+    const userPoolClient = userPool.addClient('WebUserPoolClient', {
+      oAuth: {
+        flows: {
+          authorizationCodeGrant: true,
+        },
+        scopes: [
+          cognito.OAuthScope.OPENID,
+          cognito.OAuthScope.EMAIL,
+          cognito.OAuthScope.PROFILE,
+        ],
+        callbackUrls: [
+          `https://${props.domainName}/`, // production
+          'http://localhost:5173/', // local dev
+        ],
+        logoutUrls: [
+          `https://${props.domainName}/`,
+          'http://localhost:5173/',
+        ],
+      },
+      generateSecret: false,
+      authFlows: {
+        userPassword: true,
+        userSrp: true,
+      },
+      supportedIdentityProviders: [
+        cognito.UserPoolClientIdentityProvider.COGNITO,
+      ],
+    });
     
     // Create Task Definition with deployment settings
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'WebTaskDef', {
@@ -183,6 +239,8 @@ export class DynamicWebpageStack extends cdk.Stack {
       environment: {
         NODE_ENV: 'production',
         VERSION: deploymentVersion,  // Add version to force new deployment
+        VITE_COGNITO_AUTHORITY: `https://cognito-idp.${cdk.Stack.of(this).region}.amazonaws.com/${userPool.userPoolId}`,
+        VITE_COGNITO_CLIENT_ID: userPoolClient.userPoolClientId,
       },
       logging: ecs.LogDrivers.awsLogs({ 
         streamPrefix: `${props.projectPrefix}-web`,
@@ -260,64 +318,8 @@ export class DynamicWebpageStack extends cdk.Stack {
       recordName: `${props.domainName}`,
       target: r53.RecordTarget.fromAlias(new route53Targets.LoadBalancerTarget(alb)),
     });
-    
-    // --- Cognito User Pool Setup ---
-    const userPool = new cognito.UserPool(this, 'WebUserPool', {
-      selfSignUpEnabled: true,
-      signInAliases: { email: true },
-      autoVerify: { email: true },
-      standardAttributes: {
-        email: { required: true, mutable: false },
-      },
-      passwordPolicy: {
-        minLength: 8,
-        requireLowercase: true,
-        requireUppercase: true,
-        requireDigits: true,
-        requireSymbols: false,
-      },
-      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
-    });
 
-    // Hosted UI domain
-    const userPoolDomain = userPool.addDomain('CognitoDomain', {
-      cognitoDomain: {
-        domainPrefix: `${props.projectPrefix}-webapp`, // must be globally unique
-      },
-    });
-
-    // User Pool Client for web app
-    const userPoolClient = userPool.addClient('WebUserPoolClient', {
-      oAuth: {
-        flows: {
-          authorizationCodeGrant: true,
-        },
-        scopes: [
-          cognito.OAuthScope.OPENID,
-          cognito.OAuthScope.EMAIL,
-          cognito.OAuthScope.PROFILE,
-        ],
-        callbackUrls: [
-          `https://${props.domainName}/`, // production
-          'http://localhost:5173/', // local dev
-        ],
-        logoutUrls: [
-          `https://${props.domainName}/`,
-          'http://localhost:5173/',
-        ],
-      },
-      generateSecret: false,
-      authFlows: {
-        userPassword: true,
-        userSrp: true,
-      },
-      supportedIdentityProviders: [
-        cognito.UserPoolClientIdentityProvider.COGNITO,
-      ],
-    });
-
-    // Output values for frontend config
+    // Output Cognito values for reference
     new cdk.CfnOutput(this, 'CognitoUserPoolId', {
       value: userPool.userPoolId,
     });
