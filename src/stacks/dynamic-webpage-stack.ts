@@ -31,7 +31,9 @@ export class DynamicWebpageStack extends cdk.Stack {
     const webFunction = new lambda.Function(this, 'DynamicWebFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'lambda/handler.handler',
-      code: lambda.Code.fromAsset('./dynamichomePage'),
+      code: lambda.Code.fromAsset('./dynamichomePage', {
+        exclude: ['node_modules/**', 'src/**', '*.ts', '*.tsx', 'tsconfig*', 'vite.config.*', 'index.html', 'package*.json', 'README.md', 'dockerfile', 'entrypoint.sh', 'nginx.conf'],
+      }),
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
       description: 'Serves the dynamic React website',
@@ -163,5 +165,12 @@ export class DynamicWebpageStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'CognitoDomain', {
       value: userPoolDomain.domainName,
     });
+
+    // Pass Cognito config to the Lambda so it can serve /env.js dynamically
+    webFunction.addEnvironment(
+      'COGNITO_AUTHORITY',
+      `https://cognito-idp.${cdk.Stack.of(this).region}.amazonaws.com/${userPool.userPoolId}`
+    );
+    webFunction.addEnvironment('COGNITO_CLIENT_ID', userPoolClient.userPoolClientId);
   }
 }
