@@ -12,3 +12,13 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 * `npx cdk deploy`  deploy this stack to your default AWS account/region
 * `npx cdk diff`    compare deployed stack with current state
 * `npx cdk synth`   emits the synthesized CloudFormation template
+
+## Testing
+
+Run the test suite with:
+
+```
+npm run test
+```
+
+Add new tests under the `test/` directory. Jest is configured with `ts-jest` in `jest.config.js` and looks for `**/*.test.ts` under `test/`.
