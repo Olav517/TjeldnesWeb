@@ -1,11 +1,9 @@
-'use strict';
-
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 const DIST_DIR = path.join(__dirname, '..', 'dist');
 
-const CONTENT_TYPES = {
+const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js':   'application/javascript; charset=utf-8',
   '.css':  'text/css; charset=utf-8',
@@ -25,7 +23,18 @@ const CONTENT_TYPES = {
 
 const BINARY_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.ico', '.pdf', '.woff', '.woff2', '.ttf']);
 
-exports.handler = async (event) => {
+interface LambdaEvent {
+  rawPath?: string;
+}
+
+interface LambdaResponse {
+  statusCode: number;
+  headers: Record<string, string>;
+  body: string;
+  isBase64Encoded: boolean;
+}
+
+export const handler = async (event: LambdaEvent): Promise<LambdaResponse> => {
   const rawPath = event.rawPath || '/';
 
   // Serve a dynamic env.js so the frontend reads Cognito config from Lambda env vars
@@ -61,7 +70,7 @@ exports.handler = async (event) => {
       body: isBinary ? content.toString('base64') : content.toString('utf-8'),
       isBase64Encoded: isBinary,
     };
-  } catch (_err) {
+  } catch {
     if (isStaticAsset) {
       return {
         statusCode: 404,
@@ -80,7 +89,7 @@ exports.handler = async (event) => {
         body: index.toString('utf-8'),
         isBase64Encoded: false,
       };
-    } catch (_indexErr) {
+    } catch {
       return {
         statusCode: 500,
         headers: { 'Content-Type': 'text/plain' },

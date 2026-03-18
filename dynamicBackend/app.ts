@@ -3,6 +3,10 @@ import cors from 'cors';
 import * as jwt from 'jsonwebtoken';
 import * as jwksRsa from 'jwks-rsa';
 
+interface AuthenticatedRequest extends Request {
+  user?: jwt.JwtPayload;
+}
+
 const app = express();
 const port = 4000;
 
@@ -23,7 +27,7 @@ const jwks = jwksRsa.expressJwtSecret({
 });
 
 // Middleware to validate Cognito JWT
-function authenticateJwt(req: Request, res: Response, next: NextFunction) {
+function authenticateJwt(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Missing or invalid Authorization header' });
@@ -32,17 +36,18 @@ function authenticateJwt(req: Request, res: Response, next: NextFunction) {
   const token = authHeader.split(' ')[1];
   jwt.verify(
     token,
-    jwks as any, // jwks is a callback, so we cast as any for jwt.verify
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    jwks as any, // jwks-rsa callback is not typed to match jwt.verify's SecretOrKeyProvider overload
     {
       algorithms: ['RS256'],
       issuer: COGNITO_ISSUER,
     },
-    (err: any, decoded: any) => {
+    (err: jwt.VerifyErrors | null, decoded: jwt.JwtPayload | string | undefined) => {
       if (err) {
         res.status(401).json({ error: 'Invalid token', details: err.message });
         return;
       }
-      (req as any).user = decoded;
+      req.user = decoded as jwt.JwtPayload;
       next();
     }
   );
@@ -54,8 +59,8 @@ app.get('/api/health', (req: Request, res: Response) => {
 });
 
 // Example protected endpoint
-app.get('/api/protected', authenticateJwt, (req: Request, res: Response) => {
-  res.json({ message: 'You are authenticated!', user: (req as any).user });
+app.get('/api/protected', authenticateJwt, (req: AuthenticatedRequest, res: Response) => {
+  res.json({ message: 'You are authenticated!', user: req.user });
 });
 
 app.listen(port, () => {

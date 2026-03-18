@@ -47,7 +47,6 @@ export class BuildArtifactStack extends cdk.Stack {
     if (props.trustedRepositories.length === 0) {
       throw new Error("At least one trusted GitHub repository needs to be configured")
     }
-    const { account, region } = cdk.Stack.of(this)
     const artifactBucket = new s3.Bucket(this, "ArtifactBucket", {
       bucketName: props.bucketName,
       versioned: true,

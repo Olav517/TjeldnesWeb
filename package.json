@@ -8,16 +8,21 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "lint": "eslint src/ test/",
+    "lint:all": "npm run lint && npm run lint --prefix homePage && npm run lint --prefix dynamichomePage && npm run lint --prefix dynamicBackend"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/jest": "^29.5.14",
     "@types/node": "22.7.9",
     "aws-cdk": "2.178.2",
+    "eslint": "^10.0.3",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "~5.6.3"
+    "typescript": "~5.6.3",
+    "typescript-eslint": "^8.57.1"
   },
   "dependencies": {
     "aws-cdk-lib": "2.178.2",

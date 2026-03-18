@@ -8,7 +8,6 @@ import * as apigatewayv2Integrations from 'aws-cdk-lib/aws-apigatewayv2-integrat
 import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as logs from 'aws-cdk-lib/aws-logs';
-import * as s3 from 'aws-cdk-lib/aws-s3';
 
 
 export interface Props extends cdk.StackProps {
@@ -32,7 +31,7 @@ export class DynamicWebpageStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'lambda/handler.handler',
       code: lambda.Code.fromAsset('./dynamichomePage', {
-        exclude: ['node_modules/**', 'src/**', '*.ts', '*.tsx', 'tsconfig*', 'vite.config.*', 'package*.json', 'README.md', 'dockerfile', 'entrypoint.sh', 'nginx.conf'],
+        exclude: ['node_modules/**', 'src/**', '*.ts', '*.tsx', 'tsconfig*', 'vite.config.*', 'package*.json', 'README.md', 'dockerfile', 'entrypoint.sh', 'nginx.conf', 'lambda/*.ts', 'lambda/tsconfig.json'],
       }),
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),

@@ -21,7 +21,6 @@ export class PipelineStack extends cdk.Stack {
     const artifactBucket = s3.Bucket.fromBucketName(this, "ArtifactBucket", artifactBucketName)
     const triggerArtifactName = `${pipelineName}/cdk-source.zip`
     const domainName = "test.tjeldnes.com"
-    const apiDomain = "visitorcounter.test.tjeldnes.com"
 
     const pipeline = new pipelines.CodePipeline(this, `${projectPrefix}-Pipeline`, {
       pipelineName: pipelineName,
