@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build:lambda": "tsc -p lambda/tsconfig.json",
+    "build": "npm run build:lambda && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

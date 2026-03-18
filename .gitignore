@@ -1,6 +1,7 @@
 *.js
-!jest.config.js
-!dynamichomePage/lambda/**
+
+*.d.ts
+!**/vite-env.d.ts
 
 node_modules
 

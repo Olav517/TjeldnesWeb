@@ -2,7 +2,6 @@ import * as cdk from "aws-cdk-lib"
 import * as constructs from "constructs"
 import * as acm from "aws-cdk-lib/aws-certificatemanager"
 import * as r53 from "aws-cdk-lib/aws-route53"
-import { secondaryRegion } from "../config"
 
 export interface Props extends cdk.StackProps{
     /**

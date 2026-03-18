@@ -71,7 +71,7 @@ export class WebsiteResourcesStack extends cdk.Stack {
       ],
     })
 
-    const deployment = new s3Deploy.BucketDeployment(this, "WebsiteDeployment", {
+    new s3Deploy.BucketDeployment(this, "WebsiteDeployment", {
       destinationBucket: WebsiteBucket,
       sources: [s3Deploy.Source.asset("./homePage/dist")],
       cacheControl: [
@@ -85,7 +85,7 @@ export class WebsiteResourcesStack extends cdk.Stack {
 
     WebsiteBucket.grantRead(oai);
 
-    const record = new r53.ARecord(this, "domain-cloudfront-record",{
+    new r53.ARecord(this, "domain-cloudfront-record",{
             target: r53.RecordTarget.fromAlias(new r53Targets.CloudFrontTarget(distribution)),
             zone: props.hostedZone,
             recordName: props.domainName,
@@ -137,7 +137,7 @@ export class WebsiteResourcesStack extends cdk.Stack {
             description: "API for incrementing visitor counter",
         });
 
-        const apiRecord = new r53.ARecord(this, "api-cloudfront-record",{
+        new r53.ARecord(this, "api-cloudfront-record",{
             target: r53.RecordTarget.fromAlias(new r53Targets.ApiGateway(api)),
             zone: props.hostedZone,
             recordName: props.apiDomainName,
