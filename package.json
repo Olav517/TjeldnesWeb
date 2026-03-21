@@ -29,6 +29,6 @@
     "aws-cdk-lib": "2.178.2",
     "constructs": "^10.0.0",
     "oidc-client-ts": "^3.3.0",
-    "react-oidc-context": "^3.3.0"
+    "react-oidc-context": "^3.3.1"
   }
 }
