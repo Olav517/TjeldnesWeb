@@ -9,7 +9,8 @@ import * as dynamoDb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3Deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
-import * as agw from 'aws-cdk-lib/aws-apigateway';
+import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
+import * as apigatewayv2Integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 
 export interface Props extends cdk.StackProps {
     /**
@@ -27,8 +28,8 @@ export interface Props extends cdk.StackProps {
 export class WebsiteResourcesStack extends cdk.Stack {
     public readonly hostedZoneId: string;
     public readonly hostedZone: r53.HostedZone
-    public readonly visitorCounterTable: dynamoDb.Table;
-    public readonly scoreboardTable: dynamoDb.Table;
+    public readonly visitorCounterTable: dynamoDb.TableV2;
+    public readonly scoreboardTable: dynamoDb.TableV2;
 
     constructor(scope: Construct, id: string, props: Props){
         super(scope, id, props);
@@ -43,13 +44,9 @@ export class WebsiteResourcesStack extends cdk.Stack {
       autoDeleteObjects: true, 
     })
 
-    const oai = new cloudfront.OriginAccessIdentity(this, 'newOAI');
-
     const distribution = new cloudfront.Distribution(this, "WebsiteDistribution", {
       defaultBehavior: {
-        origin: new origins.S3Origin(WebsiteBucket, {
-          originAccessIdentity: oai,
-        }),
+        origin: origins.S3BucketOrigin.withOriginAccessControl(WebsiteBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         
@@ -83,8 +80,6 @@ export class WebsiteResourcesStack extends cdk.Stack {
       distributionPaths: ["/*"],
     })
 
-    WebsiteBucket.grantRead(oai);
-
     new r53.ARecord(this, "domain-cloudfront-record",{
             target: r53.RecordTarget.fromAlias(new r53Targets.CloudFrontTarget(distribution)),
             zone: props.hostedZone,
@@ -92,13 +87,13 @@ export class WebsiteResourcesStack extends cdk.Stack {
             comment: "Points r53 subdomain to the proper cloudfront target"
         })
 
-    this.visitorCounterTable = new dynamoDb.Table(this, "visitorCounter", {
+    this.visitorCounterTable = new dynamoDb.TableV2(this, "visitorCounter", {
             partitionKey: {name: 'id', type: dynamoDb.AttributeType.STRING},
             tableName: `${props.projectPrefix}-visitor-counter-2`
         })
-    this.scoreboardTable = new dynamoDb.Table(this, 'Scoreboard', {
+    this.scoreboardTable = new dynamoDb.TableV2(this, 'Scoreboard', {
           partitionKey: { name: 'userId', type: dynamoDb.AttributeType.STRING },
-          billingMode: dynamoDb.BillingMode.PAY_PER_REQUEST,
+          billing: dynamoDb.Billing.onDemand(),
           removalPolicy: cdk.RemovalPolicy.RETAIN,
           tableName: props.projectPrefix + '-Scoreboard',
         });
@@ -110,7 +105,7 @@ export class WebsiteResourcesStack extends cdk.Stack {
         
         const visitorhandler = new lambda.Function(this, "visitorCounterHandler", {
           description: "Handler for the restAPI used to increment visitor counter for cloud resume challenge",
-          runtime: lambda.Runtime.PYTHON_3_10,
+          runtime: lambda.Runtime.PYTHON_3_13,
           code: lambda.Code.fromAsset('APIs/visitorcounter'),
           handler: 'api.handler',
           environment: {
@@ -119,8 +114,8 @@ export class WebsiteResourcesStack extends cdk.Stack {
       })
 
       const scoreboardhandler = new lambda.Function(this, "scoreboardHandler", {
-        description: "Handler for the restAPI used to increment visitor counter for cloud resume challenge",
-        runtime: lambda.Runtime.PYTHON_3_10,
+        description: "Handler for the scoreboard API",
+        runtime: lambda.Runtime.PYTHON_3_13,
         code: lambda.Code.fromAsset('APIs/scoreboard'),
         handler: 'api.handler',
         environment: {
@@ -128,17 +123,42 @@ export class WebsiteResourcesStack extends cdk.Stack {
         }
     })
 
-        const api = new agw.LambdaRestApi(this, "VisitorCounterAPI", {
-            handler: visitorhandler,
-            domainName: {
-              domainName:props.apiDomainName,
-              certificate: apiCert,
-            },
+        const apiDomainName = new apigatewayv2.DomainName(this, "APIDomainName", {
+            domainName: props.apiDomainName,
+            certificate: apiCert,
+        });
+
+        const api = new apigatewayv2.HttpApi(this, "VisitorCounterAPI", {
+            apiName: `${props.projectPrefix}-visitor-api`,
             description: "API for incrementing visitor counter",
+            defaultDomainMapping: {
+                domainName: apiDomainName,
+            },
+        });
+
+        api.addRoutes({
+            path: '/{proxy+}',
+            methods: [apigatewayv2.HttpMethod.ANY],
+            integration: new apigatewayv2Integrations.HttpLambdaIntegration(
+                'VisitorIntegration',
+                visitorhandler
+            ),
+        });
+
+        api.addRoutes({
+            path: '/scoreboard/{proxy+}',
+            methods: [apigatewayv2.HttpMethod.ANY],
+            integration: new apigatewayv2Integrations.HttpLambdaIntegration(
+                'ScoreboardIntegration',
+                scoreboardhandler
+            ),
         });
 
         new r53.ARecord(this, "api-cloudfront-record",{
-            target: r53.RecordTarget.fromAlias(new r53Targets.ApiGateway(api)),
+            target: r53.RecordTarget.fromAlias(new r53Targets.ApiGatewayv2DomainProperties(
+                apiDomainName.regionalDomainName,
+                apiDomainName.regionalHostedZoneId,
+            )),
             zone: props.hostedZone,
             recordName: props.apiDomainName,
             comment: "Points r53 subdomain to the proper API Gateway target"

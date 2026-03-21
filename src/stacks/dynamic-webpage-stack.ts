@@ -27,6 +27,11 @@ export class DynamicWebpageStack extends cdk.Stack {
     super(scope, id, props);
 
     // Create Lambda function to serve the React app
+    const webFunctionLogGroup = new logs.LogGroup(this, 'DynamicWebFunctionLogs', {
+      retention: logs.RetentionDays.ONE_MONTH,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     const webFunction = new lambda.Function(this, 'DynamicWebFunction', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'lambda/handler.handler',
@@ -36,7 +41,7 @@ export class DynamicWebpageStack extends cdk.Stack {
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
       description: 'Serves the dynamic React website',
-      logRetention: logs.RetentionDays.ONE_MONTH,
+      logGroup: webFunctionLogGroup,
       environment: {
         NODE_ENV: 'production',
       },
