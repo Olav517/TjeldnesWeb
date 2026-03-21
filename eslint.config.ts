@@ -3,7 +3,7 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['cdk.out', '**/*.d.ts', '**/*.js'] },
+  { ignores: ['cdk.out', '**/*.d.ts'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['src/**/*.ts', 'bin/**/*.ts', 'test/**/*.ts'],

@@ -6,7 +6,7 @@
       "es2020",
       "dom"
     ],
-    "declaration": true,
+    "noEmit": true,
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -16,8 +16,8 @@
     "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": false,
-    "inlineSourceMap": true,
-    "inlineSources": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": false,
     "typeRoots": [
@@ -29,6 +29,7 @@
     "cdk.out",
     "dynamichomePage",
     "homePage",
-    "dynamicBackend"
+    "dynamicBackend",
+    "eslint.config.ts"
   ]
 }
